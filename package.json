@@ -1,0 +1,57 @@
+{
+    "name": "@buzzer/media-library",
+    "version": "0.0.1",
+    "description": "Headless Media Library for React 19",
+    "main": "dist/index.js",
+    "module": "dist/index.mjs",
+    "types": "dist/index.d.ts",
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "lint": "eslint .",
+        "preview": "vite preview",
+        "storybook": "storybook dev -p 6006",
+        "build-storybook": "storybook build"
+    },
+    "peerDependencies": {
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0",
+        "cropperjs": "^2.1.0"
+    },
+    "peerDependenciesMeta": {
+        "cropperjs": {
+            "optional": true
+        }
+    },
+    "dependencies": {
+        "idb": "^8.0.0",
+        "lucide-react": "^0.554.0"
+    },
+    "devDependencies": {
+        "@mantine/core": "^7.15.2",
+        "@mantine/hooks": "^7.15.2",
+        "@storybook/addon-essentials": "^8.6.14",
+        "@storybook/addon-interactions": "^8.6.14",
+        "@storybook/addon-links": "^8.6.14",
+        "@storybook/blocks": "^8.6.14",
+        "@storybook/react": "^8.6.14",
+        "@storybook/react-vite": "^8.6.14",
+        "@storybook/test": "^8.6.14",
+        "@types/react": "^19.0.0",
+        "@types/react-dom": "^19.0.0",
+        "@vitejs/plugin-react": "^4.2.1",
+        "autoprefixer": "^10.4.19",
+        "cropperjs": "^2.1.0",
+        "postcss": "^8.4.38",
+        "postcss-preset-mantine": "^1.17.0",
+        "postcss-simple-vars": "^7.0.1",
+        "storybook": "^8.6.14",
+        "tailwindcss": "^3.4.3",
+        "typescript": "^5.4.5",
+        "vite": "^5.2.0",
+        "vite-plugin-dts": "^3.9.0"
+    }
+}
