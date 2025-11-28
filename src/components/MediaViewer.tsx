@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { MediaAsset, ComponentPreset } from '../types';
-import { Trash2, X, Check, Crop } from 'lucide-react';
-import { ImageEditor } from './ImageEditor';
+import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import { MediaAsset, ComponentPreset, MediaGridIcons } from '../types';
+import { renderIcon } from '../utils/renderIcon';
+
+// Lazy load ImageEditor - only loads when crop button is clicked
+const ImageEditor = lazy(() => import('./ImageEditor').then(module => ({ default: module.ImageEditor })));
 
 interface MediaViewerProps {
     isOpen: boolean;
@@ -12,6 +14,7 @@ interface MediaViewerProps {
     onDelete: (asset: MediaAsset) => Promise<void>;
     onSave?: (files: File[]) => Promise<void>;
     readonly?: boolean;
+    icons?: MediaGridIcons;
 }
 
 export const MediaViewer: React.FC<MediaViewerProps> = ({
@@ -23,6 +26,7 @@ export const MediaViewer: React.FC<MediaViewerProps> = ({
     onDelete,
     onSave,
     readonly = false,
+    icons = {},
 }) => {
     const [currentIndex, setCurrentIndex] = useState<number>(-1);
     const [isDeleteConfirming, setIsDeleteConfirming] = useState(false);
@@ -121,11 +125,14 @@ export const MediaViewer: React.FC<MediaViewerProps> = ({
             main={
                 isEditing && currentAsset.fileType === 'image' && currentAsset.previewUrl ? (
                     <div style={{ width: '100%', height: '100%' }}>
-                        <ImageEditor
-                            src={currentAsset.previewUrl}
-                            onSave={handleSaveCrop}
-                            onCancel={() => setIsEditing(false)}
-                        />
+                        <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', background: '#000000', color: '#ffffff' }}>Loading editor...</div>}>
+                            <ImageEditor
+                                src={currentAsset.previewUrl}
+                                onSave={handleSaveCrop}
+                                onCancel={() => setIsEditing(false)}
+                                icons={icons}
+                            />
+                        </Suspense>
                     </div>
                 ) : (
                     <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -133,10 +140,19 @@ export const MediaViewer: React.FC<MediaViewerProps> = ({
                             <Image
                                 src={currentAsset.previewUrl}
                                 alt={currentAsset.fileName}
-                                className="max-h-full max-w-full object-contain"
+                                style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }}
+                                loading="eager"
+                                decoding="async"
+                            />
+                        ) : currentAsset.fileType === 'video' && currentAsset.previewUrl ? (
+                            <video
+                                src={currentAsset.previewUrl}
+                                controls
+                                autoPlay
+                                style={{ maxHeight: '100%', maxWidth: '100%', outline: 'none' }}
                             />
                         ) : (
-                            <div className="text-white text-xl">{currentAsset.fileName}</div>
+                            <div style={{ color: '#ffffff', fontSize: '1.25rem' }}>{currentAsset.fileName}</div>
                         )}
                     </div>
                 )
@@ -157,39 +173,39 @@ export const MediaViewer: React.FC<MediaViewerProps> = ({
                                 }}
                             />
                         ) : null
-                    ))}
+                    )).filter(Boolean)}
                 </div>
             }
             actions={
                 !isEditing && (
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                         {!readonly && currentAsset.fileType === 'image' && (
-                            <Button variant="secondary" onClick={() => setIsEditing(true)} size="sm">
-                                <Crop size={18} />
+                            <Button variant="secondary" onClick={() => setIsEditing(true)} size="sm" aria-label="Crop">
+                                {renderIcon(icons?.crop, 18, undefined, 'Crop')}
                             </Button>
                         )}
 
                         {!readonly && (
                             isDeleteConfirming ? (
                                 <>
-                                    <Button variant="secondary" onClick={() => setIsDeleteConfirming(false)} size="sm">
-                                        <X size={18} />
+                                    <Button variant="secondary" onClick={() => setIsDeleteConfirming(false)} size="sm" aria-label="Cancel">
+                                        {renderIcon(icons?.x, 18, undefined, 'Cancel')}
                                     </Button>
-                                    <Button variant="danger" onClick={handleDeleteClick} size="sm">
-                                        <Check size={18} />
+                                    <Button variant="danger" onClick={handleDeleteClick} size="sm" aria-label="Confirm Delete">
+                                        {renderIcon(icons?.check, 18, undefined, 'Confirm')}
                                     </Button>
                                 </>
                             ) : (
-                                <Button variant="secondary" onClick={() => setIsDeleteConfirming(true)} size="sm">
-                                    <Trash2 size={18} />
+                                <Button variant="secondary" onClick={() => setIsDeleteConfirming(true)} size="sm" aria-label="Delete">
+                                    {renderIcon(icons?.trash, 18, undefined, 'Delete')}
                                 </Button>
                             )
                         )}
 
                         {!readonly && <div style={{ width: '1px', height: '24px', backgroundColor: 'rgba(255,255,255,0.2)', margin: '0 4px' }} />}
 
-                        <Button variant="secondary" onClick={onClose} size="sm">
-                            <X size={18} />
+                        <Button variant="secondary" onClick={onClose} size="sm" aria-label="Close">
+                            {renderIcon(icons?.x, 18, undefined, 'Close')}
                         </Button>
                     </div>
                 )

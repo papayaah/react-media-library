@@ -23,7 +23,7 @@ import { ComponentPreset, CardProps, ButtonProps, TextInputProps, SelectProps, C
  * Full-featured preset using Mantine components
  */
 export const mantinePreset: ComponentPreset = {
-    Card: ({ children, onClick, selected, className }: CardProps) => (
+    Card: ({ children, onClick, selected, className, style }: CardProps) => (
         <MantineCard
             shadow="sm"
             padding="lg"
@@ -36,6 +36,7 @@ export const mantinePreset: ComponentPreset = {
                 borderColor: selected ? 'var(--mantine-color-blue-6)' : undefined,
                 borderWidth: selected ? 2 : 1,
                 transition: 'all 0.2s',
+                ...style,
             }}
         >
             {children}
@@ -111,8 +112,8 @@ export const mantinePreset: ComponentPreset = {
         );
     },
 
-    Image: ({ src, alt, className }: ImageProps) => (
-        <MantineImage src={src} alt={alt} className={className} fit="contain" w="100%" h="100%" />
+    Image: ({ src, alt, className, onLoad }: ImageProps) => (
+        <MantineImage src={src} alt={alt} className={className} fit="contain" w="100%" h="100%" onLoad={onLoad} />
     ),
 
     Modal: ({ isOpen, onClose, title, children }: ModalProps) => (

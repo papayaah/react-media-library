@@ -5,7 +5,7 @@ import { ComponentPreset, CardProps, ButtonProps, TextInputProps, SelectProps, C
  * A minimal, unstyled preset using Tailwind CSS classes
  */
 export const tailwindPreset: ComponentPreset = {
-    Card: ({ children, onClick, selected, className = '' }: CardProps) => (
+    Card: ({ children, onClick, selected, className = '', style }: CardProps) => (
         <div
             onClick={onClick}
             className={`
@@ -14,12 +14,13 @@ export const tailwindPreset: ComponentPreset = {
         ${selected ? 'border-blue-500 border-2 shadow-md' : 'border-gray-200'}
         ${className}
       `}
+            style={style}
         >
             {children}
         </div>
     ),
 
-    Button: ({ children, onClick, variant = 'primary', disabled, loading, size = 'md', fullWidth, leftIcon, className = '' }: ButtonProps) => {
+    Button: ({ children, onClick, variant = 'primary', disabled, loading, size = 'md', fullWidth, leftIcon, className = '', 'aria-label': ariaLabel }: ButtonProps) => {
         const variants = {
             primary: 'bg-blue-600 text-white hover:bg-blue-700',
             secondary: 'bg-gray-200 text-gray-800 hover:bg-gray-300',
@@ -37,6 +38,7 @@ export const tailwindPreset: ComponentPreset = {
             <button
                 onClick={onClick}
                 disabled={disabled || loading}
+                aria-label={ariaLabel}
                 className={`
           rounded-md font-medium transition-colors
           ${variants[variant]}
@@ -75,24 +77,35 @@ export const tailwindPreset: ComponentPreset = {
         </div>
     ),
 
-    Select: ({ value, onChange, options, placeholder, className = '' }: SelectProps) => (
-        <select
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            className={`
-        w-full px-3 py-2 border border-gray-300 rounded-md
-        focus:outline-none focus:ring-2 focus:ring-blue-500
-        ${className}
-      `}
-        >
-            {placeholder && <option value="">{placeholder}</option>}
-            {options.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                </option>
-            ))}
-        </select>
-    ),
+    Select: ({ value, onChange, options, placeholder, label, className = '' }: SelectProps) => {
+        const selectId = `select-${Math.random().toString(36).substr(2, 9)}`;
+        return (
+            <div className="w-full">
+                {label && (
+                    <label htmlFor={selectId} className="block text-sm font-medium text-gray-700 mb-1">
+                        {label}
+                    </label>
+                )}
+                <select
+                    id={selectId}
+                    value={value}
+                    onChange={(e) => onChange(e.target.value)}
+                    className={`
+            w-full px-3 py-2 border border-gray-300 rounded-md
+            focus:outline-none focus:ring-2 focus:ring-blue-500
+            ${className}
+          `}
+                >
+                    {placeholder && <option value="">{placeholder}</option>}
+                    {options.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                        </option>
+                    ))}
+                </select>
+            </div>
+        );
+    },
 
     Checkbox: ({ checked, onChange, label, className = '' }: CheckboxProps) => (
         <label className={`flex items-center gap-2 cursor-pointer ${className}`}>
@@ -120,8 +133,15 @@ export const tailwindPreset: ComponentPreset = {
         );
     },
 
-    Image: ({ src, alt, className = '' }: ImageProps) => (
-        <img src={src} alt={alt} className={`w-full h-full object-contain ${className}`} />
+    Image: ({ src, alt, className = '', loading, decoding, onLoad }: ImageProps) => (
+        <img
+            src={src}
+            alt={alt}
+            loading={loading || 'lazy'}
+            decoding={decoding || 'async'}
+            onLoad={onLoad}
+            className={`w-full h-full object-contain ${className}`}
+        />
     ),
 
     Modal: ({ isOpen, onClose, title, children }: ModalProps) => {
@@ -262,7 +282,13 @@ export const tailwindPreset: ComponentPreset = {
                 ${selected ? 'border-blue-500 opacity-100' : 'border-transparent opacity-60 hover:opacity-100'}
             `}
         >
-            <img src={src} alt={alt} className="w-full h-full object-contain" />
+            <img
+                src={src}
+                alt={alt}
+                loading="lazy"
+                decoding="async"
+                className="w-full h-full object-contain"
+            />
         </div>
     ),
 };

@@ -11,7 +11,7 @@ export { RecentMediaGrid } from './components/RecentMediaGrid';
 export type { RecentMediaGridProps } from './components/RecentMediaGrid';
 
 // Presets
-export { tailwindPreset, mantinePreset } from './presets';
+export { tailwindPreset, mantinePreset, lucideIcons } from './presets';
 
 // Types
 export type {

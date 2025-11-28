@@ -1,25 +1,206 @@
 import React, { useState, useMemo } from 'react';
 import { useMediaLibraryContext } from './MediaLibraryProvider';
-import { MediaAsset, ComponentPreset } from '../types';
+import { MediaAsset, ComponentPreset, MediaGridIcons } from '../types';
 import { MediaViewer } from './MediaViewer';
-import { Check } from 'lucide-react';
+import { renderIcon } from '../utils/renderIcon';
 
 export interface RecentMediaGridProps {
     preset: ComponentPreset;
-    icons?: {
-        photo?: React.ReactNode;
-        video?: React.ReactNode;
-        audio?: React.ReactNode;
-        document?: React.ReactNode;
-        file?: React.ReactNode;
-    };
+    icons?: MediaGridIcons;
     maxItems?: number;
     onSelectionChange?: (selectedAssets: MediaAsset[]) => void;
     multiSelect?: boolean;
     columns?: number;
     gap?: string;
     showLayoutToggle?: boolean;
+    selectedAssetIds?: number[]; // IDs of assets that are already selected/added (controlled from parent)
 }
+
+interface AssetItemProps {
+    asset: MediaAsset;
+    layout: 'grid' | 'masonry';
+    preset: ComponentPreset;
+    isSelected: boolean;
+    onToggleSelection: (asset: MediaAsset) => void;
+    onAssetClick: (asset: MediaAsset) => void;
+    getTypeIcon: (type: string) => React.ReactNode;
+    icons?: MediaGridIcons;
+}
+
+const AssetItem: React.FC<AssetItemProps> = ({
+    asset,
+    layout,
+    preset,
+    isSelected,
+    onToggleSelection,
+    onAssetClick,
+    getTypeIcon,
+    icons
+}) => {
+    const { Card, Image, Skeleton } = preset;
+    const [isImageLoaded, setIsImageLoaded] = useState(false);
+    const [isHovered, setIsHovered] = useState(false);
+
+    return (
+        <div
+            style={layout === 'masonry' ? {
+                breakInside: 'avoid',
+                marginBottom: 0,
+                padding: 0
+            } : {}}
+        >
+            <Card
+                onClick={() => onToggleSelection(asset)}
+                selected={isSelected}
+                style={{
+                    position: 'relative',
+                    cursor: 'pointer',
+                    padding: 0,
+                    overflow: 'hidden',
+                    border: layout === 'masonry' ? 'none' : undefined,
+                    borderRadius: layout === 'masonry' ? 0 : undefined,
+                    // Add border highlight for selected items
+                    ...(isSelected && layout !== 'masonry' ? {
+                        border: '2px solid #2563eb',
+                        boxShadow: '0 0 0 3px rgba(37, 99, 235, 0.1)'
+                    } : {})
+                }}
+            >
+                <div
+                    style={{
+                        position: 'relative',
+                        background: layout === 'masonry' ? 'transparent' : '#f3f4f6',
+                        overflow: 'hidden',
+                        ...(layout === 'grid' ? { aspectRatio: '1 / 1' } : {})
+                    }}
+                    onMouseEnter={() => setIsHovered(true)}
+                    onMouseLeave={() => setIsHovered(false)}
+                    onClick={() => {
+                        // Prevent triggering the card's selection toggle when clicking the image area if needed,
+                        // but usually clicking the image IS clicking the card.
+                        // If we want clicking the image to select, we don't need to stop propagation here unless
+                        // the image click was previously doing something else.
+                        // Previously it was onAssetClick(asset). Now we want it to bubble to Card's onClick (selection).
+                    }}
+                >
+                    {asset.fileType === 'image' && asset.previewUrl ? (
+                        <div style={{ width: '100%', height: '100%', border: layout === 'masonry' ? 'none' : '1px solid #e5e7eb', borderRadius: layout === 'masonry' ? 0 : undefined, overflow: 'hidden', position: 'relative' }}>
+                            {!isImageLoaded && (
+                                <div style={{ position: 'absolute', inset: 0, zIndex: 5 }}>
+                                    <Skeleton className="w-full h-full" />
+                                </div>
+                            )}
+                            <Image
+                                src={asset.previewUrl}
+                                alt={asset.fileName}
+                                onLoad={() => setIsImageLoaded(true)}
+                                style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: isImageLoaded ? 1 : 0, transition: 'opacity 0.2s' }}
+                            />
+                        </div>
+                    ) : (
+                        <div style={{
+                            width: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#9ca3af',
+                            ...(layout === 'grid' ? { height: '100%' } : { height: '128px' })
+                        }}>
+                            {getTypeIcon(asset.fileType)}
+                        </div>
+                    )}
+
+                    {/* View/Zoom Button - Top Right */}
+                    <div
+                        style={{
+                            position: 'absolute',
+                            top: '0.5rem',
+                            right: '0.5rem',
+                            zIndex: 10,
+                            transition: 'opacity 0.2s',
+                            cursor: 'pointer',
+                            opacity: isHovered ? 1 : 0,
+                        }}
+                        className="group-hover:opacity-100" // We might need a way to handle hover if we can't use classes.
+                    // Since we are using inline styles and React, we can use onMouseEnter/Leave on the parent container
+                    // or just rely on the existing hover handlers if they work.
+                    // The previous code had onMouseEnter on the button itself.
+                    // We need the button to appear when hovering the CARD/Image.
+                    // The parent div (line 68) wraps everything. We can add state for hover or use CSS if possible.
+                    // But let's stick to the previous pattern: The previous button was "Always visible if selected".
+                    // Now this is a "View" button. It should probably be visible on hover.
+                    // Let's use a simple approach: The parent div needs to handle hover state?
+                    // Or we can just make it always visible? No, that clutters.
+                    // Let's try to use the `opacity` logic but based on a local hover state of the Item?
+                    // `AssetItem` doesn't track hover.
+                    // But we can add `opacity: 0` and `hover: { opacity: 1 }` if we were using CSS-in-JS or classes.
+                    // Since we are using inline styles, we might need `onMouseEnter` on the parent.
+                    >
+                        <div
+                            style={{
+                                width: '32px',
+                                height: '32px',
+                                borderRadius: '50%',
+                                background: 'rgba(255, 255, 255, 0.9)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                boxShadow: '0 2px 4px 0 rgba(0, 0, 0, 0.1)',
+                                transition: 'all 0.2s',
+                            }}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onAssetClick(asset);
+                            }}
+                            title="View Image"
+                        >
+                            {renderIcon(icons?.zoomIn || icons?.search, 16, { style: { color: '#374151' } })}
+                        </div>
+                    </div>
+
+                    {/* Selection Indicator - Top Left */}
+                    {isSelected && (
+                        <div
+                            style={{
+                                position: 'absolute',
+                                top: '0.5rem',
+                                left: '0.5rem',
+                                zIndex: 10,
+                            }}
+                        >
+                            <div style={{
+                                width: '24px',
+                                height: '24px',
+                                borderRadius: '50%',
+                                background: '#2563eb',
+                                border: '2px solid #ffffff',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                boxShadow: '0 2px 4px 0 rgba(0, 0, 0, 0.1)',
+                            }}>
+                                {renderIcon(icons?.check, 14, { style: { color: '#ffffff' } })}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Selected State Overlay - More visible for selected items */}
+                    {isSelected && (
+                        <div style={{
+                            position: 'absolute',
+                            inset: 0,
+                            background: 'rgba(37, 99, 235, 0.25)',
+                            border: '2px solid #2563eb',
+                            borderRadius: layout === 'masonry' ? '0.5rem' : undefined,
+                            pointerEvents: 'none',
+                            zIndex: 1
+                        }} />
+                    )}
+                </div>
+            </Card>
+        </div>
+    );
+};
 
 /**
  * RecentMediaGrid - A lightweight media grid component for selecting recent media
@@ -43,13 +224,19 @@ export const RecentMediaGrid: React.FC<RecentMediaGridProps> = ({
     columns = 4,
     gap = '1rem',
     showLayoutToggle = true,
+    selectedAssetIds = [],
 }) => {
-    const { assets, deleteAsset, uploadFiles } = useMediaLibraryContext();
+    const { assets, deleteAsset, uploadFiles, isDragging, draggedItemCount, pendingUploads, loading } = useMediaLibraryContext();
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const [viewerAssetId, setViewerAssetId] = useState<number | null>(null);
     const [layout, setLayout] = useState<'grid' | 'masonry'>('grid');
 
-    const { Card, Image, EmptyState } = preset;
+    const { EmptyState, Skeleton } = preset;
+
+    // Note: We don't sync selectedIds with selectedAssetIds in a useEffect
+    // Instead, we check both in the isSelected calculation below
+    // This ensures items in selectedAssetIds (already added to post) always show as selected
+    // while still allowing local selection state for user interactions
 
     // Get recent assets (sorted by createdAt, descending)
     const recentAssets = useMemo(() => {
@@ -101,53 +288,108 @@ export const RecentMediaGrid: React.FC<RecentMediaGridProps> = ({
 
     // Get type icon
     const getTypeIcon = (type: string) => {
-        const iconMap: Record<string, React.ReactNode> = {
-            image: icons.photo,
-            video: icons.video,
-            audio: icons.audio,
-            document: icons.document,
+        const iconMap: Record<string, MediaGridIcons[keyof MediaGridIcons] | undefined> = {
+            image: icons?.photo,
+            video: icons?.video,
+            audio: icons?.audio,
+            document: icons?.document,
         };
-        return iconMap[type] || icons.file;
+        return renderIcon(iconMap[type] || icons?.file, 48);
     };
 
-    if (recentAssets.length === 0) {
+    if (loading) {
+        return (
+            <div
+                style={layout === 'grid' ? {
+                    display: 'grid',
+                    gridTemplateColumns: `repeat(${columns}, 1fr)`,
+                    gap,
+                } : {
+                    columnCount: columns,
+                    columnGap: 0,
+                }}
+            >
+                {Array.from({ length: maxItems }).map((_, i) => (
+                    <div
+                        key={`loading-skeleton-${i}`}
+                        style={layout === 'masonry' ? {
+                            breakInside: 'avoid',
+                            marginBottom: '1rem',
+                            padding: 0,
+                            height: '200px',
+                            width: '100%'
+                        } : {
+                            aspectRatio: '1/1',
+                            width: '100%',
+                            height: '100%'
+                        }}
+                    >
+                        <Skeleton className="w-full h-full" />
+                    </div>
+                ))}
+            </div>
+        );
+    }
+
+    if (recentAssets.length === 0 && !isDragging && pendingUploads === 0) {
         return (
             <EmptyState
-                icon={icons.photo}
+                icon={renderIcon(icons?.photo, 48)}
                 message="No media files yet. Upload some to get started!"
             />
         );
     }
 
     return (
-        <div className="flex flex-col gap-4">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {showLayoutToggle && (
-                <div className="flex justify-end">
-                    <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1 gap-1">
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <div style={{ display: 'flex', background: '#f3f4f6', borderRadius: '0.5rem', padding: '0.25rem', gap: '0.25rem' }}>
                         <button
                             onClick={() => setLayout('grid')}
-                            className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${layout === 'grid'
-                                ? 'bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400'
-                                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
-                                }`}
+                            aria-label="Grid view"
+                            style={{
+                                padding: '0.375rem',
+                                borderRadius: '0.375rem',
+                                transition: 'all 0.2s',
+                                ...(layout === 'grid' ? {
+                                    background: '#ffffff',
+                                    boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                                    color: '#2563eb'
+                                } : {
+                                    color: '#6b7280',
+                                    background: 'transparent'
+                                })
+                            }}
+                            title="Grid View"
                         >
-                            Grid
+                            {renderIcon(icons?.layoutGrid, 16, undefined, 'Grid')}
                         </button>
                         <button
                             onClick={() => setLayout('masonry')}
-                            className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${layout === 'masonry'
-                                ? 'bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400'
-                                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
-                                }`}
+                            aria-label="Masonry view"
+                            style={{
+                                padding: '0.375rem',
+                                borderRadius: '0.375rem',
+                                transition: 'all 0.2s',
+                                ...(layout === 'masonry' ? {
+                                    background: '#ffffff',
+                                    boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                                    color: '#2563eb'
+                                } : {
+                                    color: '#6b7280',
+                                    background: 'transparent'
+                                })
+                            }}
+                            title="Masonry View"
                         >
-                            Masonry
+                            {renderIcon(icons?.columns, 16, undefined, 'Masonry')}
                         </button>
                     </div>
                 </div>
             )}
 
             <div
-                className="recent-media-grid"
                 style={layout === 'grid' ? {
                     display: 'grid',
                     gridTemplateColumns: `repeat(${columns}, 1fr)`,
@@ -157,66 +399,59 @@ export const RecentMediaGrid: React.FC<RecentMediaGridProps> = ({
                     columnGap: 0, // Masonry has no gap as requested
                 }}
             >
+                {isDragging && Array.from({ length: Math.max(1, draggedItemCount) }).map((_, i) => (
+                    <div
+                        key={`drag-skeleton-${i}`}
+                        style={layout === 'masonry' ? {
+                            breakInside: 'avoid',
+                            marginBottom: 0,
+                            padding: 0,
+                            height: '200px', // Fixed height for masonry skeleton to avoid collapse
+                            width: '100%'
+                        } : {
+                            aspectRatio: '1/1',
+                            width: '100%',
+                            height: '100%'
+                        }}
+                    >
+                        <Skeleton className="w-full h-full" />
+                    </div>
+                ))}
+
+                {Array.from({ length: pendingUploads }).map((_, i) => (
+                    <div
+                        key={`upload-skeleton-${i}`}
+                        style={layout === 'masonry' ? {
+                            breakInside: 'avoid',
+                            marginBottom: 0,
+                            padding: 0,
+                            height: '200px', // Fixed height for masonry skeleton
+                            width: '100%'
+                        } : {
+                            aspectRatio: '1/1',
+                            width: '100%',
+                            height: '100%'
+                        }}
+                    >
+                        <Skeleton className="w-full h-full" />
+                    </div>
+                ))}
+
                 {recentAssets.map((asset) => {
-                    const isSelected = asset.id ? selectedIds.has(asset.id) : false;
-
+                    // Item is selected if it's in selectedIds (current selection) OR in selectedAssetIds (already added)
+                    const isSelected = asset.id ? (selectedIds.has(asset.id) || selectedAssetIds.includes(asset.id)) : false;
                     return (
-                        <div
+                        <AssetItem
                             key={asset.id}
-                            style={layout === 'masonry' ? {
-                                breakInside: 'avoid',
-                                marginBottom: 0,
-                                padding: 0
-                            } : {}}
-                        >
-                            <Card
-                                onClick={() => { }} // We handle clicks on the image/overlay
-                                selected={isSelected}
-                                className={`relative group cursor-pointer !p-0 overflow-hidden ${layout === 'masonry' ? '!border-0 !rounded-none' : ''}`}
-                            >
-                                {/* Preview Image */}
-                                <div
-                                    className={`relative bg-gray-100 dark:bg-gray-800 overflow-hidden ${layout === 'grid' ? 'aspect-square' : ''}`}
-                                    onClick={() => handleAssetClick(asset)}
-                                >
-                                    {asset.fileType === 'image' && asset.previewUrl ? (
-                                        <Image
-                                            src={asset.previewUrl}
-                                            alt={asset.fileName}
-                                            className="w-full h-full object-cover"
-                                        />
-                                    ) : (
-                                        <div className={`w-full flex items-center justify-center text-gray-400 ${layout === 'grid' ? 'h-full' : 'h-32'}`}>
-                                            {getTypeIcon(asset.fileType)}
-                                        </div>
-                                    )}
-
-                                    {/* Selection Button */}
-                                    <div
-                                        className={`absolute top-2 right-2 z-10 transition-opacity cursor-pointer ${isSelected
-                                                ? 'opacity-100'
-                                                : 'opacity-0 group-hover:opacity-100'
-                                            }`}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            toggleSelection(asset);
-                                        }}
-                                    >
-                                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shadow-sm transition-colors ${isSelected
-                                                ? 'bg-blue-600 border-blue-600'
-                                                : 'bg-black/20 border-white hover:bg-black/40'
-                                            }`}>
-                                            {isSelected && <Check size={14} className="text-white" />}
-                                        </div>
-                                    </div>
-
-                                    {/* Selected State Overlay (Visual only, pointer-events-none) */}
-                                    {isSelected && (
-                                        <div className="absolute inset-0 bg-blue-500/20 pointer-events-none" />
-                                    )}
-                                </div>
-                            </Card>
-                        </div>
+                            asset={asset}
+                            layout={layout}
+                            preset={preset}
+                            isSelected={isSelected}
+                            onToggleSelection={toggleSelection}
+                            onAssetClick={handleAssetClick}
+                            getTypeIcon={getTypeIcon}
+                            icons={icons}
+                        />
                     );
                 })}
             </div>
@@ -231,6 +466,7 @@ export const RecentMediaGrid: React.FC<RecentMediaGridProps> = ({
                 onDelete={deleteAsset}
                 onSave={uploadFiles}
                 readonly={true}
+                icons={icons}
             />
         </div>
     );

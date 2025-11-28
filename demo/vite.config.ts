@@ -1,20 +1,19 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
   resolve: {
     dedupe: ['react', 'react-dom'],
+    alias: {
+      '@buzzer/media-library': path.resolve(__dirname, '../src'),
+    },
   },
   optimizeDeps: {
     include: ['react', 'react-dom'],
     exclude: ['cropperjs'], // Don't pre-bundle cropperjs, let it load on demand
-    esbuildOptions: {
-      define: {
-        global: 'globalThis',
-      },
-    },
   },
   build: {
     minify: 'terser',
@@ -28,6 +27,10 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
+          // Handle the local @buzzer/media-library package - bundle it with the main code
+          if (id.includes('@buzzer/media-library') || id.includes('/media-library/src/')) {
+            return undefined; // Bundle it in the main chunk
+          }
           // Split vendor chunks for better caching
           if (id.includes('node_modules')) {
             // Don't split React - keep it in main bundle to avoid loading order issues

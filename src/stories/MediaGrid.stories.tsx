@@ -2,29 +2,8 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { MantineProvider } from '@mantine/core';
 import { MediaLibraryProvider } from '../components/MediaLibraryProvider';
 import { MediaGrid } from '../components/MediaGrid';
-import { tailwindPreset, mantinePreset } from '../presets';
-import {
-    Upload,
-    Search,
-    Trash2,
-    Image,
-    Video,
-    Music,
-    FileText,
-    File,
-} from 'lucide-react';
+import { tailwindPreset, mantinePreset, lucideIcons } from '../presets';
 import '@mantine/core/styles.css';
-
-const icons = {
-    upload: <Upload size={16} />,
-    search: <Search size={16} />,
-    trash: <Trash2 size={14} />,
-    photo: <Image size={48} opacity={0.5} />,
-    video: <Video size={48} />,
-    audio: <Music size={48} />,
-    document: <FileText size={48} />,
-    file: <File size={48} />,
-};
 
 const meta: Meta<typeof MediaGrid> = {
     title: 'MediaLibrary/MediaGrid',
@@ -41,7 +20,7 @@ type Story = StoryObj<typeof meta>;
 export const TailwindPreset: Story = {
     render: () => (
         <MediaLibraryProvider enableDragDrop={true}>
-            <MediaGrid preset={tailwindPreset} icons={icons} />
+            <MediaGrid preset={tailwindPreset} icons={lucideIcons} />
         </MediaLibraryProvider>
     ),
     parameters: {
@@ -68,10 +47,10 @@ Just pass a preset with your UI components!
 **Usage:**
 \`\`\`tsx
 import { MediaLibraryProvider, MediaGrid } from '@buzzer/media-library';
-import { tailwindPreset } from '@buzzer/media-library/presets';
+import { tailwindPreset, lucideIcons } from '@buzzer/media-library/presets';
 
 <MediaLibraryProvider>
-  <MediaGrid preset={tailwindPreset} icons={icons} />
+  <MediaGrid preset={tailwindPreset} icons={lucideIcons} />
 </MediaLibraryProvider>
 \`\`\`
         `,
@@ -84,7 +63,7 @@ export const MantinePreset: Story = {
     render: () => (
         <MantineProvider>
             <MediaLibraryProvider enableDragDrop={true}>
-                <MediaGrid preset={mantinePreset} icons={icons} />
+                <MediaGrid preset={mantinePreset} icons={lucideIcons} />
             </MediaLibraryProvider>
         </MantineProvider>
     ),
@@ -105,7 +84,7 @@ import { mantinePreset } from '@buzzer/media-library/presets';
 
 <MantineProvider>
   <MediaLibraryProvider>
-    <MediaGrid preset={mantinePreset} icons={icons} />
+    <MediaGrid preset={mantinePreset} icons={lucideIcons} />
   </MediaLibraryProvider>
 </MantineProvider>
 \`\`\`
@@ -120,7 +99,7 @@ export const MantineDarkMode: Story = {
         <MantineProvider forceColorScheme="dark">
             <div style={{ background: '#1a1b1e', minHeight: '100vh' }}>
                 <MediaLibraryProvider enableDragDrop={true}>
-                    <MediaGrid preset={mantinePreset} icons={icons} />
+                    <MediaGrid preset={mantinePreset} icons={lucideIcons} />
                 </MediaLibraryProvider>
             </div>
         </MantineProvider>
@@ -141,7 +120,7 @@ The same component automatically adapts to dark mode.
 export const CreateYourOwnPreset: Story = {
     render: () => (
         <MediaLibraryProvider>
-            <MediaGrid preset={tailwindPreset} icons={icons} />
+            <MediaGrid preset={tailwindPreset} icons={lucideIcons} />
         </MediaLibraryProvider>
     ),
     parameters: {
@@ -192,7 +171,8 @@ export const myPreset: ComponentPreset = {
 };
 
 // Use it:
-<MediaGrid preset={myPreset} icons={icons} />
+import { lucideIcons } from '@buzzer/media-library/presets';
+<MediaGrid preset={myPreset} icons={lucideIcons} />
 \`\`\`
 
 **Required Components (12 total):**

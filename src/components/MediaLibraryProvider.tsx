@@ -12,6 +12,7 @@ interface MediaLibraryContextValue {
     deleteAsset: (asset: MediaAsset) => Promise<void>;
     refresh: () => Promise<void>;
     isDragging: boolean;
+    draggedItemCount: number;
     pendingUploads: number;
 }
 
@@ -35,13 +36,13 @@ export const MediaLibraryProvider: React.FC<MediaLibraryProviderProps> = ({
     enableDragDrop = true,
 }) => {
     const mediaLibrary = useMediaLibrary();
-    const { isDragging } = useMediaDragDrop(
+    const { isDragging, draggedItemCount } = useMediaDragDrop(
         mediaLibrary.uploadFiles,
         !enableDragDrop || mediaLibrary.uploading
     );
 
     return (
-        <MediaLibraryContext.Provider value={{ ...mediaLibrary, isDragging }}>
+        <MediaLibraryContext.Provider value={{ ...mediaLibrary, isDragging, draggedItemCount }}>
             {children}
         </MediaLibraryContext.Provider>
     );

@@ -66,7 +66,6 @@ export const useMediaLibrary = () => {
         setPendingUploads(files.length);
         setError(null);
         try {
-            const newAssets: MediaAsset[] = [];
             for (const file of files) {
                 const handleName = await saveFileToOpfs(file);
                 const asset: Omit<MediaAsset, 'id'> = {
@@ -85,10 +84,11 @@ export const useMediaLibrary = () => {
                     previewUrl = URL.createObjectURL(file);
                 }
 
-                newAssets.push({ ...asset, id, previewUrl });
+                const newAsset = { ...asset, id, previewUrl };
+
+                setAssets((prev) => [newAsset, ...prev]);
                 setPendingUploads((prev) => Math.max(0, prev - 1));
             }
-            setAssets((prev) => [...newAssets, ...prev]);
         } catch (err) {
             console.error('Upload failed:', err);
             setError('Failed to upload files.');

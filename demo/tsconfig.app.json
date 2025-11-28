@@ -28,9 +28,6 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": [
-    "src/**/*",
-    "../src/**/*",
-    "../src/cropper.d.ts",
-    "src/cropper.d.ts"
+    "src/**/*"
   ]
 }

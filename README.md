@@ -1,21 +1,90 @@
-# @buzzer/media-library
+# React Media Library
 
-A complete, opinionated media library for React 19 that's UI-agnostic.
+A lightweight, high-performance media library for React 19 that follows all best practices to ensure maximum speed and efficiency. This library is designed to be as fast as possible while providing a complete set of media management features.
 
-## Philosophy
+![Lighthouse Scores](lighthouse-scores.png)
 
-**One component. Full-featured. Bring your own UI.**
+## Features
 
-The `MediaGrid` component provides everything you need for a media library:
-- Upload, search, filter, select, delete
-- All features built-in
-- Just plug in your UI components
+- Drag & drop support
+- Real-time search by filename
+- Filter by file type (images, videos, audio, documents, other)
+- Date range filtering
+- Select mode with bulk delete operations
+- Individual file deletion
+- Image viewer modal
+- Responsive grid, list, and masonry layouts
+- Loading and empty states
+- Persistent storage using IndexedDB and OPFS
+- UI-agnostic design - works with any UI library
 
-## Quick Start
+## Smooth Upload Experience
+
+One of the standout features of this library is the **zero-layout-shift upload experience**. When you drag and drop multiple files:
+
+1. **Skeleton loaders appear instantly** matching the exact dimensions of your grid items
+2. **Each file is processed incrementally** - as soon as one file is ready, it replaces its skeleton
+3. **Images fade in smoothly** - the actual image loads behind the skeleton and fades in with a subtle opacity transition
+4. **No jumping or shifting** - the layout remains perfectly stable throughout the entire upload process
+
+This creates a buttery-smooth experience even when uploading dozens of files at once. The skeleton loaders maintain the grid structure while files are being processed, and each image seamlessly transitions into view as it becomes available.
+
+![Smooth Upload Demo](demo-upload.gif)
+*Demo: Drag and drop multiple files with zero layout shift*
+
+## Installation
+
+Install the library:
+
+```bash
+npm install @buzzer/media-library
+```
+
+**Icons are optional**: The library does NOT automatically install any icon library. You have three options:
+
+1. **Use the Lucide React preset** (recommended for quick start):
+   ```bash
+   npm install lucide-react  # Must install separately
+   ```
+
+2. **Use your own icon library** - Pass your own icon components (see "Using Your Own Icons" below)
+
+3. **No icons** - Icons are optional. If you don't provide icons, text fallbacks will be used
+
+## Usage
+
+### Using the Lucide Icons Preset (Recommended)
 
 ```tsx
-import { MediaLibraryProvider, MediaGrid } from '@buzzer/media-library';
-import { tailwindPreset } from '@buzzer/media-library/presets';
+import { MediaLibraryProvider, MediaGrid, tailwindPreset, lucideIcons } from '@buzzer/media-library';
+
+function App() {
+  return (
+    <MediaLibraryProvider enableDragDrop={true}>
+      <MediaGrid preset={tailwindPreset} icons={lucideIcons} />
+    </MediaLibraryProvider>
+  );
+}
+```
+
+### Using Your Own Icons
+
+You can use any icon library or provide your own React components:
+
+```tsx
+import { MediaLibraryProvider, MediaGrid, tailwindPreset } from '@buzzer/media-library';
+import { Upload, Search, Trash2, Image, Video, Music, FileText, File } from 'your-icon-library';
+
+const icons = {
+  upload: Upload,  // Icon component (not JSX element)
+  search: Search,
+  trash: Trash2,
+  photo: Image,
+  video: Video,
+  audio: Music,
+  document: FileText,
+  file: File,
+};
 
 function App() {
   return (
@@ -26,352 +95,19 @@ function App() {
 }
 ```
 
-That's it! You get a complete media library with all features.
-
-## Features
-
-### ✅ Upload
-- File button upload
-- Global drag & drop (entire page)
-- Multiple file support
-- Upload progress indicator
-
-### ✅ Search & Filter
-- Search by filename (real-time)
-- Filter by file type (all, images, videos, audio, documents, other)
-- Date range filtering (from/to dates)
-- Combined filtering (all filters work together)
-
-### ✅ Selection & Bulk Operations
-- Select mode toggle
-- Individual selection (checkboxes)
-- Select all / Deselect all
-- Bulk delete with confirmation
-- Selection counter
-
-### ✅ Display & UI
-- Responsive grid layout
-- File type icons
-- File size display (human-readable)
-- Upload timestamps
-- Loading states
-- Empty states
-- Image viewer modal
-
-### ✅ Storage
-- **IndexedDB**: Metadata storage (database name: "MediaLibrary")
-- **OPFS**: File storage (directory: "media-library")
-- Persistent across sessions
-- Preview URLs for images
-
-## Built-in Presets
-
-### Tailwind CSS
-```tsx
-import { tailwindPreset } from '@buzzer/media-library/presets';
-
-<MediaGrid preset={tailwindPreset} icons={icons} />
-```
-
-### Mantine UI
-```tsx
-import { MantineProvider } from '@mantine/core';
-import { mantinePreset } from '@buzzer/media-library/presets';
-import '@mantine/core/styles.css';
-
-<MantineProvider>
-  <MediaGrid preset={mantinePreset} icons={icons} />
-</MantineProvider>
-```
-
-## Creating Your Own Preset
-
-A preset is just an object with 12 UI components:
-
-```tsx
-import { ComponentPreset } from '@buzzer/media-library';
-
-export const myPreset: ComponentPreset = {
-  // 1. Card - Container for each media item
-  Card: ({ children, onClick, selected }) => (
-    <div onClick={onClick} className={selected ? 'selected' : ''}>
-      {children}
-    </div>
-  ),
-
-  // 2. Button - All action buttons
-  Button: ({ children, onClick, variant, loading, leftIcon }) => (
-    <button onClick={onClick} className={`btn btn-${variant}`}>
-      {leftIcon} {loading ? 'Loading...' : children}
-    </button>
-  ),
-
-  // 3. TextInput - Search and date inputs
-  TextInput: ({ value, onChange, placeholder, type, leftIcon }) => (
-    <div>
-      {leftIcon}
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-      />
-    </div>
-  ),
-
-  // 4. Select - File type filter
-  Select: ({ value, onChange, options, placeholder }) => (
-    <select value={value} onChange={(e) => onChange(e.target.value)}>
-      {placeholder && <option value="">{placeholder}</option>}
-      {options.map(opt => (
-        <option key={opt.value} value={opt.value}>{opt.label}</option>
-      ))}
-    </select>
-  ),
-
-  // 5. Checkbox - Selection checkboxes
-  Checkbox: ({ checked, onChange, label }) => (
-    <label>
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-      />
-      {label}
-    </label>
-  ),
-
-  // 6. Badge - File type and size badges
-  Badge: ({ children, variant }) => (
-    <span className={`badge badge-${variant}`}>{children}</span>
-  ),
-
-  // 7. Image - Image preview
-  Image: ({ src, alt }) => (
-    <img src={src} alt={alt} />
-  ),
-
-  // 8. Modal - Image viewer modal
-  Modal: ({ isOpen, onClose, title, children }) => {
-    if (!isOpen) return null;
-    return (
-      <div className="modal">
-        <div className="modal-header">
-          <h3>{title}</h3>
-          <button onClick={onClose}>×</button>
-        </div>
-        <div className="modal-body">{children}</div>
-      </div>
-    );
-  },
-
-  // 9. Loader - Loading spinner
-  Loader: ({ size }) => (
-    <div className={`spinner spinner-${size}`} />
-  ),
-
-  // 10. EmptyState - No files message
-  EmptyState: ({ icon, message }) => (
-    <div className="empty-state">
-      {icon}
-      <p>{message}</p>
-    </div>
-  ),
-
-  // 11. FileButton - File upload button
-  FileButton: ({ onSelect, multiple, disabled, children }) => (
-    <label className={disabled ? 'disabled' : ''}>
-      <input
-        type="file"
-        multiple={multiple}
-        disabled={disabled}
-        onChange={(e) => {
-          const files = Array.from(e.target.files || []);
-          if (files.length > 0) onSelect(files);
-        }}
-        style={{ display: 'none' }}
-      />
-      {children}
-    </label>
-  ),
-
-  // 12. Grid - Responsive grid layout
-  Grid: ({ children }) => (
-    <div className="grid">
-      {children}
-    </div>
-  ),
-};
-```
-
-## Icons
-
-Pass icons for a better UX:
-
-```tsx
-import {
-  IconUpload,
-  IconSearch,
-  IconTrash,
-  IconPhoto,
-  IconVideo,
-  IconFileMusic,
-  IconFileDescription,
-  IconFile,
-} from '@tabler/icons-react';
-
-const icons = {
-  upload: <IconUpload size={16} />,
-  search: <IconSearch size={16} />,
-  trash: <IconTrash size={14} />,
-  photo: <IconPhoto size={48} opacity={0.5} />,
-  video: <IconVideo size={48} />,
-  audio: <IconFileMusic size={48} />,
-  document: <IconFileDescription size={48} />,
-  file: <IconFile size={48} />,
-};
-
-<MediaGrid preset={tailwindPreset} icons={icons} />
-```
-
-## Examples
-
-### Material-UI
-```tsx
-import { ComponentPreset } from '@buzzer/media-library';
-import { Card, Button, TextField, Select } from '@mui/material';
-
-export const muiPreset: ComponentPreset = {
-  Card: ({ children, onClick, selected }) => (
-    <Card
-      onClick={onClick}
-      sx={{ border: selected ? '2px solid blue' : '1px solid #e0e0e0' }}
-    >
-      {children}
-    </Card>
-  ),
-  Button: ({ children, onClick, variant }) => (
-    <Button
-      onClick={onClick}
-      variant={variant === 'primary' ? 'contained' : 'outlined'}
-    >
-      {children}
-    </Button>
-  ),
-  // ... implement remaining components
-};
-```
-
-### Ant Design
-```tsx
-import { ComponentPreset } from '@buzzer/media-library';
-import { Card, Button, Input, Select } from 'antd';
-
-export const antdPreset: ComponentPreset = {
-  Card: ({ children, onClick, selected }) => (
-    <Card
-      onClick={onClick}
-      style={{ borderColor: selected ? '#1890ff' : '#d9d9d9' }}
-    >
-      {children}
-    </Card>
-  ),
-  Button: ({ children, onClick, variant, loading }) => (
-    <Button
-      onClick={onClick}
-      type={variant === 'primary' ? 'primary' : 'default'}
-      loading={loading}
-    >
-      {children}
-    </Button>
-  ),
-  // ... implement remaining components
-};
-```
-
-## TypeScript
-
-Full TypeScript support with all types exported:
-
-```tsx
-import type {
-  ComponentPreset,
-  CardProps,
-  ButtonProps,
-  MediaAsset,
-  MediaType,
-} from '@buzzer/media-library';
-```
-
-## API Reference
-
-### MediaGrid Props
-
-```tsx
-interface MediaGridProps {
-  preset: ComponentPreset;
-  icons?: {
-    upload?: React.ReactNode;
-    search?: React.ReactNode;
-    trash?: React.ReactNode;
-    photo?: React.ReactNode;
-    video?: React.ReactNode;
-    audio?: React.ReactNode;
-    document?: React.ReactNode;
-    file?: React.ReactNode;
-  };
-}
-```
-
-### MediaLibraryProvider Props
-
-```tsx
-interface MediaLibraryProviderProps {
-  children: ReactNode;
-  enableDragDrop?: boolean; // default: true
-}
-```
-
 ## Storybook
 
-See live examples:
+To launch Storybook and view live examples:
 
 ```bash
-cd packages/media-library
 npm run storybook
 ```
 
-Visit http://localhost:6006 to see:
-- Tailwind preset
-- Mantine preset (light & dark)
-- How to create your own preset
+This will start Storybook on http://localhost:6006 where you can see:
 
-## Benefits
-
-### ✅ Opinionated Structure
-- All features in one component
-- Consistent UX across implementations
-- No need to build UI from scratch
-
-### ✅ UI Agnostic
-- Works with any UI library
-- Tailwind, Mantine, MUI, Ant Design, Chakra, etc.
-- Or create your own custom components
-
-### ✅ Full-Featured
-- Everything you need out of the box
-- Upload, search, filter, select, delete
-- Image viewer, loading states, empty states
-
-### ✅ Type Safe
-- Full TypeScript support
-- Autocomplete for all props
-- Compile-time errors
-
-### ✅ Easy to Use
-- One component, one preset
-- Minimal boilerplate
-- Works immediately
+- Tailwind CSS preset examples
+- Mantine UI preset examples (light and dark modes)
+- How to create your own custom preset
 
 ## License
 

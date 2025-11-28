@@ -1,21 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { useMediaLibraryContext } from './MediaLibraryProvider';
-import { MediaAsset, ComponentPreset } from '../types';
+import { MediaAsset, ComponentPreset, MediaGridIcons } from '../types';
 import { MediaViewer } from './MediaViewer';
-import { LayoutGrid, List, Columns, SlidersHorizontal } from 'lucide-react';
+import { renderIcon } from '../utils/renderIcon';
 
 interface MediaGridProps {
     preset: ComponentPreset;
-    icons?: {
-        upload?: React.ReactNode;
-        search?: React.ReactNode;
-        trash?: React.ReactNode;
-        photo?: React.ReactNode;
-        video?: React.ReactNode;
-        audio?: React.ReactNode;
-        document?: React.ReactNode;
-        file?: React.ReactNode;
-    };
+    icons?: MediaGridIcons;
+    onSelectionChange?: (selectedAssets: MediaAsset[]) => void;
 }
 
 const typeIconMap = (icons: MediaGridProps['icons']) => ({
@@ -25,6 +17,10 @@ const typeIconMap = (icons: MediaGridProps['icons']) => ({
     document: icons?.document,
     other: icons?.file,
 });
+
+const renderTypeIcon = (icon: MediaGridIcons[keyof MediaGridIcons] | undefined, size: number = 48) => {
+    return renderIcon(icon, size);
+};
 
 const formatFileSize = (bytes: number) => {
     if (!Number.isFinite(bytes)) return '—';
@@ -46,6 +42,199 @@ const formatTimestamp = (ms: number) => {
     });
 };
 
+interface GridAssetItemProps {
+    asset: MediaAsset;
+    preset: ComponentPreset;
+    isSelected: boolean;
+    isSelectMode: boolean;
+    onToggleSelection: (id: number) => void;
+    onAssetClick: (asset: MediaAsset) => void;
+    onDeleteAsset: (asset: MediaAsset) => void;
+    renderTypeIcon: (icon: any, size: number) => React.ReactNode;
+    iconMap: any;
+}
+
+const GridAssetItem: React.FC<GridAssetItemProps> = ({
+    asset,
+    preset,
+    isSelected,
+    isSelectMode,
+    onToggleSelection,
+    onAssetClick,
+    onDeleteAsset,
+    renderTypeIcon,
+    iconMap
+}) => {
+    const { Card, Image, Badge, Button, Skeleton } = preset;
+    const [isImageLoaded, setIsImageLoaded] = useState(false);
+    const [isHovered, setIsHovered] = useState(false);
+
+    return (
+        <Card
+            onClick={() => onToggleSelection(asset.id!)}
+            selected={isSelected}
+            style={{
+                padding: 0,
+                position: 'relative',
+                overflow: 'hidden',
+                border: isSelected ? '2px solid #2563eb' : undefined,
+            }}
+        >
+            {/* Selection Indicator - Top Left */}
+            {isSelected && (
+                <div style={{ position: 'absolute', top: '0.5rem', left: '0.5rem', zIndex: 10 }}>
+                    <div style={{
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '50%',
+                        background: '#2563eb',
+                        border: '2px solid #ffffff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 2px 4px 0 rgba(0, 0, 0, 0.1)',
+                    }}>
+                        {renderIcon(iconMap.other, 14, { style: { color: '#ffffff' } }, '✓')}
+                        {/* Note: We need a check icon. iconMap doesn't have it explicitly passed in props usually, 
+                           but we can try to use a default or pass it. 
+                           Actually, renderIcon handles string names if we had them, but here we have nodes.
+                           Let's use a simple SVG if check is not available or assume it is.
+                           Wait, MediaGridProps has icons. GridAssetItem receives iconMap which is derived from icons.
+                           But iconMap only has file types.
+                           We need to pass the full icons object or at least the check icon to GridAssetItem.
+                           For now, I'll use a simple check character or try to get the icon.
+                           The user wants it to look like RecentMediaGrid.
+                           RecentMediaGrid uses `icons?.check`.
+                           GridAssetItem doesn't receive `icons`. It receives `iconMap`.
+                           I should update GridAssetItem to receive `icons` instead of or in addition to `iconMap`.
+                        */}
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                    </div>
+                </div>
+            )}
+
+            {/* View Button - Top Right */}
+            <div
+                style={{
+                    position: 'absolute',
+                    top: '0.5rem',
+                    right: '0.5rem',
+                    zIndex: 10,
+                    opacity: isHovered ? 1 : 0,
+                    transition: 'opacity 0.2s',
+                    cursor: 'pointer',
+                }}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onAssetClick(asset);
+                }}
+                title="View"
+            >
+                <div style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    background: 'rgba(255, 255, 255, 0.9)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 2px 4px 0 rgba(0, 0, 0, 0.1)',
+                }}>
+                    {/* Zoom icon */}
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        <line x1="11" y1="8" x2="11" y2="14"></line>
+                        <line x1="8" y1="11" x2="14" y2="11"></line>
+                    </svg>
+                </div>
+            </div>
+
+            <div
+                style={{
+                    width: '100%',
+                    height: '160px',
+                    overflow: 'hidden',
+                    borderBottom: '1px solid #e5e7eb',
+                    position: 'relative',
+                    backgroundColor: '#f3f4f6'
+                }}
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
+            >
+                {(asset.fileType === 'image' || asset.fileType === 'video') && asset.previewUrl ? (
+                    <>
+                        {!isImageLoaded && (
+                            <div style={{ position: 'absolute', inset: 0, zIndex: 5 }}>
+                                <Skeleton className="w-full h-full" />
+                            </div>
+                        )}
+                        {asset.fileType === 'video' ? (
+                            <video
+                                src={asset.previewUrl}
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                onLoadedData={() => setIsImageLoaded(true)}
+                                muted
+                                loop
+                                playsInline
+                                onMouseEnter={(e) => e.currentTarget.play()}
+                                onMouseLeave={(e) => e.currentTarget.pause()}
+                            />
+                        ) : (
+                            <Image
+                                src={asset.previewUrl}
+                                alt={asset.fileName}
+                                onLoad={() => setIsImageLoaded(true)}
+                                style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: isImageLoaded ? 1 : 0, transition: 'opacity 0.2s' }}
+                            />
+                        )}
+                    </>
+                ) : (
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
+                        {renderTypeIcon(iconMap[asset.fileType], 48)}
+                    </div>
+                )}
+            </div>
+
+            <div style={{ padding: '0.75rem' }}>
+                <div style={{ marginBottom: '0.5rem' }}>
+                    <div style={{ fontWeight: '600', fontSize: '0.875rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {asset.fileName}
+                    </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+                    <Badge variant="default">{asset.fileType}</Badge>
+                    <Badge variant="secondary">{formatFileSize(asset.size)}</Badge>
+                </div>
+
+                <div style={{ fontSize: '0.75rem', color: '#4b5563', marginBottom: '0.75rem' }}>
+                    {formatTimestamp(asset.createdAt)}
+                </div>
+
+                {!isSelectMode && (
+                    <div onClick={(e) => e.stopPropagation()}>
+                        <Button
+                            variant="danger"
+                            size="sm"
+                            fullWidth
+                            onClick={() => {
+                                if (confirm('Delete this file?')) {
+                                    onDeleteAsset(asset);
+                                }
+                            }}
+                        >
+                            Delete
+                        </Button>
+                    </div>
+                )}
+            </div>
+        </Card>
+    );
+};
+
 /**
  * MediaGrid - The complete, opinionated media library component
  * 
@@ -62,8 +251,8 @@ const formatTimestamp = (ms: number) => {
  * 
  * It's UI-agnostic - just pass a preset with your UI components!
  */
-export const MediaGrid: React.FC<MediaGridProps> = ({ preset, icons = {} }) => {
-    const { assets, loading, uploading, uploadFiles, deleteAsset, isDragging, pendingUploads } = useMediaLibraryContext();
+export const MediaGrid: React.FC<MediaGridProps> = ({ preset, icons = {}, onSelectionChange }) => {
+    const { assets, loading, uploading, uploadFiles, deleteAsset, isDragging, draggedItemCount, pendingUploads } = useMediaLibraryContext();
 
     // Filters
     const [searchQuery, setSearchQuery] = useState('');
@@ -82,7 +271,7 @@ export const MediaGrid: React.FC<MediaGridProps> = ({ preset, icons = {} }) => {
     const [viewMode, setViewMode] = useState<'grid' | 'list' | 'masonry'>('grid');
     const [masonryGap, setMasonryGap] = useState(1);
 
-    const { Card, Button, TextInput, Select, Checkbox, Badge, Image, Loader, FileButton, Skeleton, UploadCard } = preset;
+    const { Button, TextInput, Select, Checkbox, Badge, Loader, FileButton, Skeleton, UploadCard } = preset;
 
     // Filtered assets
     const filteredAssets = useMemo(() => {
@@ -109,6 +298,10 @@ export const MediaGrid: React.FC<MediaGridProps> = ({ preset, icons = {} }) => {
             } else {
                 next.add(id);
             }
+            if (onSelectionChange) {
+                const selectedAssets = assets.filter((a) => next.has(a.id!));
+                onSelectionChange(selectedAssets);
+            }
             return next;
         });
     };
@@ -132,23 +325,21 @@ export const MediaGrid: React.FC<MediaGridProps> = ({ preset, icons = {} }) => {
     };
 
     const handleAssetClick = (asset: MediaAsset) => {
-        if (isSelectMode) {
-            toggleSelection(asset.id!);
-        } else if (asset.fileType === 'image') {
+        if (asset.fileType === 'image' || asset.fileType === 'video') {
             setViewingAsset(asset);
         }
     };
 
-    const iconMap = typeIconMap(icons);
+    const iconMap = useMemo(() => typeIconMap(icons), [icons]);
 
     return (
         <div style={{ padding: '1rem' }}>
             {/* Header */}
             <div style={{ marginBottom: '1.5rem' }}>
-                <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
+                <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#111827' }}>
                     Media Library
                 </h1>
-                <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>
+                <p style={{ color: '#4b5563', fontSize: '0.875rem' }}>
                     Upload and manage your images, videos, and other assets
                 </p>
             </div>
@@ -172,9 +363,9 @@ export const MediaGrid: React.FC<MediaGridProps> = ({ preset, icons = {} }) => {
 
             {/* Selection Bar */}
             {isSelectMode && filteredAssets.length > 0 && (
-                <div style={{ marginBottom: '1rem', padding: '1rem', border: '1px solid #e5e7eb', borderRadius: '0.5rem' }}>
+                <div style={{ marginBottom: '1rem', padding: '1rem', border: '1px solid #e5e7eb', borderRadius: '0.5rem', background: '#f9fafb' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.875rem', fontWeight: '500' }}>
+                        <span style={{ fontSize: '0.875rem', fontWeight: '500', color: '#374151' }}>
                             {selectedIds.size > 0
                                 ? `${selectedIds.size} item${selectedIds.size === 1 ? '' : 's'} selected`
                                 : 'Select items to delete'}
@@ -192,7 +383,7 @@ export const MediaGrid: React.FC<MediaGridProps> = ({ preset, icons = {} }) => {
                                             Deselect All
                                         </Button>
                                     )}
-                                    <Button variant="danger" size="sm" leftIcon={icons.trash} onClick={handleBulkDelete}>
+                                    <Button variant="danger" size="sm" leftIcon={renderIcon(icons?.trash, 18, undefined, 'Delete')} onClick={handleBulkDelete}>
                                         Delete ({selectedIds.size})
                                     </Button>
                                 </>
@@ -207,18 +398,18 @@ export const MediaGrid: React.FC<MediaGridProps> = ({ preset, icons = {} }) => {
             )}
 
             {/* Filters */}
-            <div style={{ marginBottom: '1.5rem', padding: '1rem', border: '1px solid #e5e7eb', borderRadius: '0.5rem' }}>
+            <div style={{ marginBottom: '1.5rem', padding: '1rem', border: '1px solid #e5e7eb', borderRadius: '0.5rem', background: '#ffffff' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
                     <TextInput
                         value={searchQuery}
                         onChange={setSearchQuery}
                         placeholder="Search files..."
-                        leftIcon={icons.search}
+                        leftIcon={renderIcon(icons?.search, 20)}
                     />
                     <Select
                         value={typeFilter}
                         onChange={setTypeFilter}
-                        placeholder="File type"
+                        placeholder="All Types"
                         options={[
                             { value: 'all', label: 'All Types' },
                             { value: 'image', label: 'Images' },
@@ -247,7 +438,7 @@ export const MediaGrid: React.FC<MediaGridProps> = ({ preset, icons = {} }) => {
             <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', alignItems: 'center' }}>
                 {viewMode === 'masonry' && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginRight: '1rem' }}>
-                        <SlidersHorizontal size={16} className="text-gray-500" />
+                        {renderIcon(icons?.slidersHorizontal, 16, { style: { color: '#6b7280' } }, '⚙')}
                         <input
                             type="range"
                             min="0"
@@ -264,30 +455,33 @@ export const MediaGrid: React.FC<MediaGridProps> = ({ preset, icons = {} }) => {
                     variant={viewMode === 'grid' ? 'primary' : 'secondary'}
                     size="sm"
                     onClick={() => setViewMode('grid')}
+                    aria-label="Grid view"
                 >
-                    <LayoutGrid size={16} />
+                    {renderIcon(icons?.layoutGrid, 16, undefined, 'Grid')}
                 </Button>
                 <Button
                     variant={viewMode === 'list' ? 'primary' : 'secondary'}
                     size="sm"
                     onClick={() => setViewMode('list')}
+                    aria-label="List view"
                 >
-                    <List size={16} />
+                    {renderIcon(icons?.list, 16, undefined, 'List')}
                 </Button>
                 <Button
                     variant={viewMode === 'masonry' ? 'primary' : 'secondary'}
                     size="sm"
                     onClick={() => setViewMode('masonry')}
+                    aria-label="Masonry view"
                 >
-                    <Columns size={16} />
+                    {renderIcon(icons?.columns, 16, undefined, 'Masonry')}
                 </Button>
             </div>
 
             {/* Media Grid */}
             {loading ? (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '3rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '3rem', paddingBottom: '3rem' }}>
                     <Loader size="lg" />
-                    <p style={{ marginTop: '1rem', color: '#6b7280' }}>Loading your media assets…</p>
+                    <p style={{ marginTop: '1rem', color: '#4b5563' }}>Loading your media assets…</p>
                 </div>
             ) : (
                 <>
@@ -297,7 +491,7 @@ export const MediaGrid: React.FC<MediaGridProps> = ({ preset, icons = {} }) => {
                                 <FileButton onSelect={uploadFiles} multiple disabled={uploading}>
                                     <UploadCard onClick={() => { }} isDragging={isDragging}>
                                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', padding: '1rem' }}>
-                                            {icons.upload}
+                                            {renderIcon(icons?.upload, 24)}
                                             <span>Upload</span>
                                         </div>
                                     </UploadCard>
@@ -305,7 +499,6 @@ export const MediaGrid: React.FC<MediaGridProps> = ({ preset, icons = {} }) => {
                             </div>
 
                             {filteredAssets.map((asset) => {
-                                const Icon = iconMap[asset.fileType];
                                 const isSelected = selectedIds.has(asset.id!);
 
                                 return (
@@ -315,8 +508,8 @@ export const MediaGrid: React.FC<MediaGridProps> = ({ preset, icons = {} }) => {
                                             style={{
                                                 position: 'relative',
                                                 cursor: 'pointer',
-                                                border: isSelected ? '2px solid #3b82f6' : '1px solid #e5e7eb',
-                                                borderRadius: '0.5rem',
+                                                border: isSelected ? '2px solid #3b82f6' : 'none',
+                                                borderRadius: 0,
                                                 overflow: 'hidden'
                                             }}
                                         >
@@ -330,14 +523,18 @@ export const MediaGrid: React.FC<MediaGridProps> = ({ preset, icons = {} }) => {
                                             )}
 
                                             {asset.fileType === 'image' && asset.previewUrl ? (
-                                                <img
-                                                    src={asset.previewUrl}
-                                                    alt={asset.fileName}
-                                                    style={{ width: '100%', height: 'auto', display: 'block' }}
-                                                />
+                                                <div style={{ width: '100%', height: 'auto', display: 'block', border: 'none', borderRadius: 0, overflow: 'hidden' }}>
+                                                    <img
+                                                        src={asset.previewUrl}
+                                                        alt={asset.fileName}
+                                                        loading="lazy"
+                                                        decoding="async"
+                                                        style={{ width: '100%', height: 'auto', display: 'block' }}
+                                                    />
+                                                </div>
                                             ) : (
-                                                <div style={{ width: '100%', height: '160px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f3f4f6' }}>
-                                                    {Icon}
+                                                <div style={{ width: '100%', height: '160px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent' }}>
+                                                    {renderTypeIcon(iconMap[asset.fileType], 48)}
                                                 </div>
                                             )}
                                         </div>
@@ -378,13 +575,12 @@ export const MediaGrid: React.FC<MediaGridProps> = ({ preset, icons = {} }) => {
                                     cursor: 'pointer',
                                     color: '#6b7280'
                                 }}>
-                                    {icons.upload}
+                                    {renderIcon(icons?.upload, 24)}
                                     <span>Upload New Files</span>
                                 </div>
                             </FileButton>
 
                             {filteredAssets.map((asset) => {
-                                const Icon = iconMap[asset.fileType];
                                 const isSelected = selectedIds.has(asset.id!);
 
                                 return (
@@ -415,9 +611,17 @@ export const MediaGrid: React.FC<MediaGridProps> = ({ preset, icons = {} }) => {
 
                                         <div style={{ width: '40px', height: '40px', overflow: 'hidden', borderRadius: '0.25rem', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                             {asset.fileType === 'image' && asset.previewUrl ? (
-                                                <img src={asset.previewUrl} alt={asset.fileName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                <div style={{ width: '100%', height: '100%', border: '1px solid #e5e7eb', borderRadius: '0.25rem', overflow: 'hidden' }}>
+                                                    <img
+                                                        src={asset.previewUrl}
+                                                        alt={asset.fileName}
+                                                        loading="lazy"
+                                                        decoding="async"
+                                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                    />
+                                                </div>
                                             ) : (
-                                                Icon
+                                                renderTypeIcon(iconMap[asset.fileType], 40)
                                             )}
                                         </div>
 
@@ -455,103 +659,43 @@ export const MediaGrid: React.FC<MediaGridProps> = ({ preset, icons = {} }) => {
                             })}
                         </div>
                     ) : (
-                        <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-                            gap: '1rem'
-                        }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
                             {/* Grid View (Default) */}
                             <FileButton onSelect={uploadFiles} multiple disabled={uploading}>
                                 <UploadCard onClick={() => { }} isDragging={isDragging}>
                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-                                        {icons.upload}
+                                        {renderIcon(icons?.upload, 24, undefined, 'Upload')}
                                         <span>Upload</span>
                                     </div>
                                 </UploadCard>
                             </FileButton>
 
-                            {isDragging && Array.from({ length: 4 }).map((_, i) => (
-                                <Skeleton key={`drag-skeleton-${i}`} />
+                            {isDragging && Array.from({ length: Math.max(1, draggedItemCount) }).map((_, i) => (
+                                <div key={`drag-skeleton-${i}`} style={{ aspectRatio: '1/1', width: '100%', height: '100%' }}>
+                                    <Skeleton className="w-full h-full" />
+                                </div>
                             ))}
 
                             {Array.from({ length: pendingUploads }).map((_, i) => (
-                                <Skeleton key={`skeleton-${i}`} />
+                                <div key={`skeleton-${i}`} style={{ aspectRatio: '1/1', width: '100%', height: '100%' }}>
+                                    <Skeleton className="w-full h-full" />
+                                </div>
                             ))}
 
-                            {filteredAssets.map((asset) => {
-                                const Icon = iconMap[asset.fileType];
-                                const isSelected = selectedIds.has(asset.id!);
-
-                                return (
-                                    <Card key={asset.id} onClick={() => handleAssetClick(asset)} selected={isSelected}>
-                                        {isSelectMode && (
-                                            <div style={{ position: 'absolute', top: '0.5rem', left: '0.5rem', zIndex: 10 }}>
-                                                <Checkbox
-                                                    checked={isSelected}
-                                                    onChange={() => toggleSelection(asset.id!)}
-                                                />
-                                            </div>
-                                        )}
-
-                                        {asset.fileType === 'image' && asset.previewUrl ? (
-                                            <div style={{
-                                                width: '100%',
-                                                height: '160px',
-                                                overflow: 'hidden',
-                                                borderRadius: '0.5rem',
-                                                marginBottom: '0.75rem'
-                                            }}>
-                                                <Image src={asset.previewUrl} alt={asset.fileName} />
-                                            </div>
-                                        ) : (
-                                            <div style={{
-                                                width: '100%',
-                                                height: '160px',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                background: '#f3f4f6',
-                                                borderRadius: '0.5rem',
-                                                marginBottom: '0.75rem'
-                                            }}>
-                                                {Icon}
-                                            </div>
-                                        )}
-
-                                        <div style={{ marginBottom: '0.5rem' }}>
-                                            <div style={{ fontWeight: '600', fontSize: '0.875rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                {asset.fileName}
-                                            </div>
-                                        </div>
-
-                                        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
-                                            <Badge variant="default">{asset.fileType}</Badge>
-                                            <Badge variant="secondary">{formatFileSize(asset.size)}</Badge>
-                                        </div>
-
-                                        <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.75rem' }}>
-                                            {formatTimestamp(asset.createdAt)}
-                                        </div>
-
-                                        {!isSelectMode && (
-                                            <div onClick={(e) => e.stopPropagation()}>
-                                                <Button
-                                                    variant="danger"
-                                                    size="sm"
-                                                    fullWidth
-                                                    onClick={() => {
-                                                        if (confirm('Delete this file?')) {
-                                                            deleteAsset(asset);
-                                                        }
-                                                    }}
-                                                >
-                                                    Delete
-                                                </Button>
-                                            </div>
-                                        )}
-                                    </Card>
-                                );
-                            })}
+                            {filteredAssets.map((asset) => (
+                                <GridAssetItem
+                                    key={asset.id}
+                                    asset={asset}
+                                    preset={preset}
+                                    isSelected={selectedIds.has(asset.id!)}
+                                    isSelectMode={isSelectMode}
+                                    onToggleSelection={toggleSelection}
+                                    onAssetClick={handleAssetClick}
+                                    onDeleteAsset={deleteAsset}
+                                    renderTypeIcon={renderTypeIcon}
+                                    iconMap={iconMap}
+                                />
+                            ))}
                         </div>
                     )}
                 </>
@@ -566,6 +710,7 @@ export const MediaGrid: React.FC<MediaGridProps> = ({ preset, icons = {} }) => {
                 preset={preset}
                 onDelete={deleteAsset}
                 onSave={uploadFiles}
+                icons={icons}
             />
         </div>
     );

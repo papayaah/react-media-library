@@ -1,13 +1,16 @@
+// @ts-nocheck - cropperjs web components
 import React, { useRef, useEffect, useState } from 'react';
-import { Check, RotateCw, RotateCcw, FlipHorizontal, FlipVertical, ZoomIn, ZoomOut, Undo, Hand, Crop } from 'lucide-react';
+import { MediaGridIcons } from '../types';
+import { renderIcon } from '../utils/renderIcon';
 
 interface ImageEditorProps {
     src: string;
     onSave: (blob: Blob) => void;
     onCancel: () => void;
+    icons?: MediaGridIcons;
 }
 
-export const ImageEditor: React.FC<ImageEditorProps> = ({ src, onSave, onCancel }) => {
+export const ImageEditor: React.FC<ImageEditorProps> = ({ src, onSave, onCancel, icons = {} }) => {
     const canvasRef = useRef<any>(null);
     const selectionRef = useRef<any>(null);
     const imageRef = useRef<any>(null);
@@ -19,6 +22,8 @@ export const ImageEditor: React.FC<ImageEditorProps> = ({ src, onSave, onCancel 
     const previewCanvasRef = useRef<HTMLCanvasElement>(null);
     const [rotation, setRotation] = useState(0);
     const rotationRef = useRef(0);
+    const [imageKey, setImageKey] = useState(0); // Key to force remount on reset
+    const zoomLevelRef = useRef(0); // Track cumulative zoom level
 
     useEffect(() => {
         // Dynamically import cropperjs only when this component is mounted
@@ -153,20 +158,25 @@ export const ImageEditor: React.FC<ImageEditorProps> = ({ src, onSave, onCancel 
     const handleZoom = (ratio: number) => {
         if (imageRef.current) {
             imageRef.current.$zoom(ratio);
+            zoomLevelRef.current += ratio; // Track zoom level
             setIsDirty(true);
         }
     };
 
     const handleReset = () => {
-        if (imageRef.current) {
-            imageRef.current.$reset();
-            setScaleX(1);
-            setScaleY(1);
-        }
-        if (selectionRef.current) {
-            selectionRef.current.hidden = true;
-        }
+        // Reset all state variables
+        rotationRef.current = 0;
+        setRotation(0);
+        setScaleX(1);
+        setScaleY(1);
+        zoomLevelRef.current = 0;
+        setAspectRatio(null);
         setIsDirty(false);
+        
+        // Force remount of cropper-image by changing key - this completely resets all transformations
+        // This is the cleanest way to ensure rotation, flip, zoom, and position are all reset
+        // The useEffect hook will handle resetting the selection after the image remounts
+        setImageKey(prev => prev + 1);
     };
 
     const onInteract = () => {
@@ -178,14 +188,14 @@ export const ImageEditor: React.FC<ImageEditorProps> = ({ src, onSave, onCancel 
     const [aspectRatio, setAspectRatio] = useState<number | null>(null);
 
     const presets = [
-        { label: 'Free', value: null, icon: <Crop size={20} /> },
-        { label: '1:1', value: 1, icon: <div className="border-2 border-white w-5 h-5 rounded-sm" /> },
-        { label: '9:16', value: 9 / 16, icon: <div className="border-2 border-white w-3 h-5 rounded-sm" /> },
-        { label: '16:9', value: 16 / 9, icon: <div className="border-2 border-white w-5 h-3 rounded-sm" /> },
-        { label: '4:5', value: 4 / 5, icon: <div className="border-2 border-white w-4 h-5 rounded-sm" /> },
-        { label: '5:4', value: 5 / 4, icon: <div className="border-2 border-white w-5 h-4 rounded-sm" /> },
-        { label: '3:4', value: 3 / 4, icon: <div className="border-2 border-white w-3 h-4 rounded-sm" /> },
-        { label: '4:3', value: 4 / 3, icon: <div className="border-2 border-white w-4 h-3 rounded-sm" /> },
+        { label: 'Free', value: null, icon: renderIcon(icons?.crop, 20, undefined, 'Crop') },
+        { label: '1:1', value: 1, icon: <div style={{ border: '2px solid white', width: '20px', height: '20px', borderRadius: '2px' }} /> },
+        { label: '9:16', value: 9 / 16, icon: <div style={{ border: '2px solid white', width: '12px', height: '20px', borderRadius: '2px' }} /> },
+        { label: '16:9', value: 16 / 9, icon: <div style={{ border: '2px solid white', width: '20px', height: '12px', borderRadius: '2px' }} /> },
+        { label: '4:5', value: 4 / 5, icon: <div style={{ border: '2px solid white', width: '16px', height: '20px', borderRadius: '2px' }} /> },
+        { label: '5:4', value: 5 / 4, icon: <div style={{ border: '2px solid white', width: '20px', height: '16px', borderRadius: '2px' }} /> },
+        { label: '3:4', value: 3 / 4, icon: <div style={{ border: '2px solid white', width: '12px', height: '16px', borderRadius: '2px' }} /> },
+        { label: '4:3', value: 4 / 3, icon: <div style={{ border: '2px solid white', width: '16px', height: '12px', borderRadius: '2px' }} /> },
     ];
 
     const handleAspectRatio = (ratio: number | null) => {
@@ -217,6 +227,34 @@ export const ImageEditor: React.FC<ImageEditorProps> = ({ src, onSave, onCancel 
             }
         }
     }, [aspectRatio, isReady]);
+
+    // Reset selection when image key changes (after image remount)
+    useEffect(() => {
+        if (imageKey > 0 && isReady) {
+            // Wait for the image and selection to be fully initialized after remount
+            const resetSelection = () => {
+                if (imageRef.current && selectionRef.current) {
+                    selectionRef.current.hidden = false;
+                    selectionRef.current.aspectRatio = null;
+                    selectionRef.current.$center();
+                    // Update preview after reset
+                    setTimeout(updatePreview, 50);
+                    return true;
+                }
+                return false;
+            };
+            
+            // Try immediately, then retry with delays if refs aren't ready yet
+            if (!resetSelection()) {
+                const timeout1 = setTimeout(() => {
+                    if (!resetSelection()) {
+                        setTimeout(resetSelection, 100);
+                    }
+                }, 50);
+                return () => clearTimeout(timeout1);
+            }
+        }
+    }, [imageKey, isReady]);
 
     // Joystick/Dial Component
     const RotationJoystick = () => {
@@ -306,17 +344,41 @@ export const ImageEditor: React.FC<ImageEditorProps> = ({ src, onSave, onCancel 
 
         return (
             <div
-                className="relative w-16 h-16 rounded-full border-2 border-white/20 flex items-center justify-center cursor-pointer bg-white/5 hover:bg-white/10 transition-colors touch-none select-none"
+                style={{
+                    position: 'relative',
+                    width: '64px',
+                    height: '64px',
+                    borderRadius: '50%',
+                    border: '2px solid rgba(255, 255, 255, 0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    transition: 'background-color 0.2s',
+                    touchAction: 'none',
+                    userSelect: 'none'
+                }}
                 ref={dialRef}
                 onMouseDown={handleMouseDown}
+                onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                }}
+                onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                }}
             >
                 {/* Center dot */}
-                <div className="w-1.5 h-1.5 bg-white/30 rounded-full absolute" />
+                <div style={{ width: '6px', height: '6px', background: 'rgba(255, 255, 255, 0.3)', borderRadius: '50%', position: 'absolute' }} />
 
                 {/* Line from center to knob */}
                 <div
-                    className="absolute h-0.5 bg-blue-500/50 origin-left pointer-events-none"
                     style={{
+                        position: 'absolute',
+                        height: '2px',
+                        background: 'rgba(59, 130, 246, 0.5)',
+                        transformOrigin: 'left',
+                        pointerEvents: 'none',
                         width: '24px',
                         left: '50%',
                         top: '50%',
@@ -326,107 +388,201 @@ export const ImageEditor: React.FC<ImageEditorProps> = ({ src, onSave, onCancel 
 
                 {/* Knob */}
                 <div
-                    className={`w-4 h-4 rounded-full absolute shadow-lg border border-white/20 transition-transform duration-75 ${isDragging ? 'bg-blue-400 scale-110' : 'bg-blue-500'}`}
                     style={{
-                        transform: `translate(${knobX}px, ${knobY}px)`
+                        width: '16px',
+                        height: '16px',
+                        borderRadius: '50%',
+                        position: 'absolute',
+                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        transition: 'transform 0.075s',
+                        background: isDragging ? '#60a5fa' : '#3b82f6',
+                        transform: `translate(${knobX}px, ${knobY}px) ${isDragging ? 'scale(1.1)' : 'scale(1)'}`
                     }}
                 />
 
                 {/* Markers */}
-                <div className="absolute top-1 w-0.5 h-1.5 bg-white/20" />
-                <div className="absolute bottom-1 w-0.5 h-1.5 bg-white/20" />
-                <div className="absolute left-1 w-1.5 h-0.5 bg-white/20" />
-                <div className="absolute right-1 w-1.5 h-0.5 bg-white/20" />
+                <div style={{ position: 'absolute', top: '4px', width: '2px', height: '6px', background: 'rgba(255, 255, 255, 0.2)' }} />
+                <div style={{ position: 'absolute', bottom: '4px', width: '2px', height: '6px', background: 'rgba(255, 255, 255, 0.2)' }} />
+                <div style={{ position: 'absolute', left: '4px', width: '6px', height: '2px', background: 'rgba(255, 255, 255, 0.2)' }} />
+                <div style={{ position: 'absolute', right: '4px', width: '6px', height: '2px', background: 'rgba(255, 255, 255, 0.2)' }} />
             </div>
         );
     };
 
     if (!isReady) {
         return (
-            <div className="flex items-center justify-center w-full h-full bg-black text-white">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', background: '#000000', color: '#ffffff' }}>
                 Loading editor...
             </div>
         );
     }
 
     return (
-        <div className="relative w-full h-full bg-black flex">
+        <div style={{ position: 'relative', width: '100%', height: '100%', background: '#000000', display: 'flex' }}>
             {/* Left Sidebar - Expanded */}
-            <div className="w-72 bg-neutral-900 border-r border-white/10 flex flex-col z-50 h-full">
+            <div style={{ width: '288px', background: '#171717', borderRight: '1px solid rgba(255, 255, 255, 0.1)', display: 'flex', flexDirection: 'column', zIndex: 50, height: '100%' }}>
 
                 {/* Preview Section */}
-                <div className="p-4 border-b border-white/10 shrink-0">
-                    <span className="text-xs font-medium text-gray-400 mb-3 block uppercase tracking-wider">Preview</span>
-                    <div className="w-full aspect-video bg-neutral-950 rounded-lg overflow-hidden border border-white/10 flex items-center justify-center relative group">
-                        <div className="absolute inset-0 bg-[url('https://media.istockphoto.com/id/1147544807/vector/thumbnail-image-vector-graphic.jpg?s=612x612&w=0&k=20&c=rnCKVbdzNOs8b5z-VR1X84w7Fk88_fET23_ugb17acQ=')] opacity-5 bg-center bg-cover"></div>
-                        <canvas ref={previewCanvasRef} className="max-w-full max-h-full object-contain relative z-10" />
+                <div style={{ padding: '1rem', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', flexShrink: 0 }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: '500', color: '#9ca3af', marginBottom: '0.75rem', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Preview</span>
+                    <div style={{ width: '100%', aspectRatio: '16 / 9', background: '#0a0a0a', borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid rgba(255, 255, 255, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url("https://media.istockphoto.com/id/1147544807/vector/thumbnail-image-vector-graphic.jpg?s=612x612&w=0&k=20&c=rnCKVbdzNOs8b5z-VR1X84w7Fk88_fET23_ugb17acQ=")', opacity: 0.05, backgroundPosition: 'center', backgroundSize: 'cover' }}></div>
+                        <canvas ref={previewCanvasRef} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', position: 'relative', zIndex: 10 }} />
                     </div>
                 </div>
 
                 {/* Rotation Section */}
-                <div className="p-4 border-b border-white/10 shrink-0">
-                    <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">Rotation</span>
-                        <span className="text-xs font-mono text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded">{Math.round(rotation)}°</span>
+                <div style={{ padding: '1rem', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', flexShrink: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: '500', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Rotation</span>
+                        <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: '#60a5fa', background: 'rgba(59, 130, 246, 0.1)', padding: '0.125rem 0.5rem', borderRadius: '0.25rem' }}>{Math.round(rotation)}°</span>
                     </div>
 
-                    <div className="flex items-center gap-4 justify-center">
-                        <button onClick={() => snapRotate('left')} className="p-2 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors">
-                            <RotateCcw size={16} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', justifyContent: 'center' }}>
+                        <button
+                            onClick={() => snapRotate('left')}
+                            style={{ padding: '0.5rem', borderRadius: '50%', color: '#9ca3af', transition: 'all 0.2s', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                                e.currentTarget.style.color = '#ffffff';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.background = 'transparent';
+                                e.currentTarget.style.color = '#9ca3af';
+                            }}
+                        >
+                            {renderIcon(icons?.rotateCcw, 16, undefined, 'CCW')}
                         </button>
 
                         <RotationJoystick />
 
-                        <button onClick={() => snapRotate('right')} className="p-2 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors">
-                            <RotateCw size={16} />
+                        <button
+                            onClick={() => snapRotate('right')}
+                            style={{ padding: '0.5rem', borderRadius: '50%', color: '#9ca3af', transition: 'all 0.2s', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                                e.currentTarget.style.color = '#ffffff';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.background = 'transparent';
+                                e.currentTarget.style.color = '#9ca3af';
+                            }}
+                        >
+                            {renderIcon(icons?.rotateCw, 16, undefined, 'CW')}
                         </button>
                     </div>
                 </div>
 
                 {/* Presets Section */}
-                <div className="flex-1 overflow-y-auto p-4">
-                    <span className="text-xs font-medium text-gray-400 mb-3 block uppercase tracking-wider">Crop Presets</span>
-                    <div className="grid grid-cols-3 gap-2">
+                <div style={{ flex: 1, overflowY: 'auto', padding: '1rem' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: '500', color: '#9ca3af', marginBottom: '0.75rem', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Crop Presets</span>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
                         {presets.map((preset, i) => (
                             <button
                                 key={i}
                                 onClick={() => handleAspectRatio(preset.value)}
-                                className={`flex flex-col items-center justify-center gap-2 p-3 rounded-lg border transition-all ${aspectRatio === preset.value
-                                    ? 'bg-blue-600/20 border-blue-500 text-blue-400'
-                                    : 'bg-white/5 border-transparent text-gray-400 hover:bg-white/10 hover:text-white'
-                                    }`}
+                                style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '0.5rem',
+                                    padding: '0.75rem',
+                                    borderRadius: '0.5rem',
+                                    border: '1px solid',
+                                    transition: 'all 0.2s',
+                                    ...(aspectRatio === preset.value ? {
+                                        background: 'rgba(37, 99, 235, 0.2)',
+                                        borderColor: '#3b82f6',
+                                        color: '#60a5fa'
+                                    } : {
+                                        background: 'rgba(255, 255, 255, 0.05)',
+                                        borderColor: 'transparent',
+                                        color: '#9ca3af'
+                                    })
+                                }}
+                                onMouseEnter={(e) => {
+                                    if (aspectRatio !== preset.value) {
+                                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                                        e.currentTarget.style.color = '#ffffff';
+                                    }
+                                }}
+                                onMouseLeave={(e) => {
+                                    if (aspectRatio !== preset.value) {
+                                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                                        e.currentTarget.style.color = '#9ca3af';
+                                    }
+                                }}
                                 title={preset.label}
                             >
                                 {preset.icon}
-                                <span className="text-[10px] font-medium">{preset.label}</span>
+                                <span style={{ fontSize: '10px', fontWeight: '500' }}>{preset.label}</span>
                             </button>
                         ))}
                     </div>
                 </div>
             </div>
 
-            <div className="flex-1 flex flex-col relative min-w-0">
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', minWidth: 0 }}>
                 {/* Top Bar */}
-                <div className="absolute top-4 right-4 z-50 flex gap-2">
+                <div style={{ position: 'absolute', top: '1rem', right: '1rem', zIndex: 50, display: 'flex', gap: '0.5rem' }}>
                     <button
                         onClick={onCancel}
-                        className="px-4 py-2 bg-neutral-900/80 hover:bg-neutral-800 border border-white/10 rounded-full text-white transition-colors text-sm font-medium backdrop-blur-md"
+                        style={{
+                            padding: '0.5rem 1rem',
+                            background: 'rgba(23, 23, 23, 0.8)',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            borderRadius: '9999px',
+                            color: '#ffffff',
+                            transition: 'all 0.2s',
+                            fontSize: '0.875rem',
+                            fontWeight: '500',
+                            backdropFilter: 'blur(12px)',
+                            cursor: 'pointer'
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(38, 38, 38, 0.8)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'rgba(23, 23, 23, 0.8)';
+                        }}
                     >
                         Cancel
                     </button>
                     {isDirty && (
                         <button
                             onClick={handleSave}
-                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-full text-white transition-colors text-sm font-medium shadow-lg animate-in fade-in zoom-in duration-200 flex items-center gap-2"
+                            style={{
+                                padding: '0.5rem 1rem',
+                                background: '#2563eb',
+                                borderRadius: '9999px',
+                                color: '#ffffff',
+                                transition: 'all 0.2s',
+                                fontSize: '0.875rem',
+                                fontWeight: '500',
+                                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                cursor: 'pointer',
+                                border: 'none'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.background = '#1d4ed8';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.background = '#2563eb';
+                            }}
                         >
-                            <Check size={16} />
+                            {renderIcon(icons?.check, 16, undefined, 'Save')}
                             Save
                         </button>
                     )}
                 </div>
 
                 {/* Main Editor */}
-                <div className="flex-1 w-full h-full overflow-hidden bg-neutral-950 relative">
+                <div style={{ flex: 1, width: '100%', height: '100%', overflow: 'hidden', background: '#0a0a0a', position: 'relative' }}>
                     <cropper-canvas
                         ref={canvasRef}
                         background
@@ -435,6 +591,7 @@ export const ImageEditor: React.FC<ImageEditorProps> = ({ src, onSave, onCancel 
                         onChange={onInteract}
                     >
                         <cropper-image
+                            key={imageKey}
                             ref={imageRef}
                             src={src}
                             alt="Edit"
@@ -477,50 +634,138 @@ export const ImageEditor: React.FC<ImageEditorProps> = ({ src, onSave, onCancel 
                 </div>
 
                 {/* Bottom Toolbar - Simplified since we moved rotation */}
-                <div className="h-16 bg-neutral-900 border-t border-white/10 flex items-center justify-center gap-4 px-4 z-50">
-                    <div className="flex items-center gap-2 bg-white/5 rounded-lg p-1">
+                <div style={{ height: '64px', background: '#171717', borderTop: '1px solid rgba(255, 255, 255, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', padding: '0 1rem', zIndex: 50 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '0.5rem', padding: '0.25rem' }}>
                         <button
                             onClick={() => setMode('pan')}
-                            className={`p-2 rounded text-white transition-colors ${mode === 'pan' ? 'bg-blue-500' : 'hover:bg-white/10'}`}
+                            style={{
+                                padding: '0.5rem',
+                                borderRadius: '0.25rem',
+                                color: '#ffffff',
+                                transition: 'background-color 0.2s',
+                                background: mode === 'pan' ? '#3b82f6' : 'transparent',
+                                border: 'none',
+                                cursor: 'pointer'
+                            }}
+                            onMouseEnter={(e) => {
+                                if (mode !== 'pan') {
+                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                                }
+                            }}
+                            onMouseLeave={(e) => {
+                                if (mode !== 'pan') {
+                                    e.currentTarget.style.background = 'transparent';
+                                }
+                            }}
                             title="Pan Mode"
                         >
-                            <Hand size={18} />
+                            {renderIcon(icons?.hand, 18, undefined, 'Pan')}
                         </button>
                         <button
                             onClick={() => setMode('crop')}
-                            className={`p-2 rounded text-white transition-colors ${mode === 'crop' ? 'bg-blue-500' : 'hover:bg-white/10'}`}
+                            style={{
+                                padding: '0.5rem',
+                                borderRadius: '0.25rem',
+                                color: '#ffffff',
+                                transition: 'background-color 0.2s',
+                                background: mode === 'crop' ? '#3b82f6' : 'transparent',
+                                border: 'none',
+                                cursor: 'pointer'
+                            }}
+                            onMouseEnter={(e) => {
+                                if (mode !== 'crop') {
+                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                                }
+                            }}
+                            onMouseLeave={(e) => {
+                                if (mode !== 'crop') {
+                                    e.currentTarget.style.background = 'transparent';
+                                }
+                            }}
                             title="Crop Mode"
                         >
-                            <Crop size={18} />
+                            {renderIcon(icons?.crop, 18, undefined, 'Crop')}
                         </button>
                     </div>
 
-                    <div className="w-px h-8 bg-white/10" />
+                    <div style={{ width: '1px', height: '32px', background: 'rgba(255, 255, 255, 0.1)' }} />
 
-                    <div className="flex items-center gap-2 bg-white/5 rounded-lg p-1">
-                        <button onClick={() => handleFlip('x')} className="p-2 hover:bg-white/10 rounded text-white" title="Flip Horizontal">
-                            <FlipHorizontal size={18} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '0.5rem', padding: '0.25rem' }}>
+                        <button
+                            onClick={() => handleFlip('x')}
+                            style={{ padding: '0.5rem', borderRadius: '0.25rem', color: '#ffffff', transition: 'background-color 0.2s', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.background = 'transparent';
+                            }}
+                            title="Flip Horizontal"
+                        >
+                            {renderIcon(icons?.flipHorizontal, 18, undefined, 'H')}
                         </button>
-                        <button onClick={() => handleFlip('y')} className="p-2 hover:bg-white/10 rounded text-white" title="Flip Vertical">
-                            <FlipVertical size={18} />
+                        <button
+                            onClick={() => handleFlip('y')}
+                            style={{ padding: '0.5rem', borderRadius: '0.25rem', color: '#ffffff', transition: 'background-color 0.2s', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.background = 'transparent';
+                            }}
+                            title="Flip Vertical"
+                        >
+                            {renderIcon(icons?.flipVertical, 18, undefined, 'V')}
                         </button>
                     </div>
 
-                    <div className="w-px h-8 bg-white/10" />
+                    <div style={{ width: '1px', height: '32px', background: 'rgba(255, 255, 255, 0.1)' }} />
 
-                    <div className="flex items-center gap-2 bg-white/5 rounded-lg p-1">
-                        <button onClick={() => handleZoom(0.1)} className="p-2 hover:bg-white/10 rounded text-white" title="Zoom In">
-                            <ZoomIn size={18} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '0.5rem', padding: '0.25rem' }}>
+                        <button
+                            onClick={() => handleZoom(0.1)}
+                            style={{ padding: '0.5rem', borderRadius: '0.25rem', color: '#ffffff', transition: 'background-color 0.2s', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.background = 'transparent';
+                            }}
+                            title="Zoom In"
+                        >
+                            {renderIcon(icons?.zoomIn, 18, undefined, '+')}
                         </button>
-                        <button onClick={() => handleZoom(-0.1)} className="p-2 hover:bg-white/10 rounded text-white" title="Zoom Out">
-                            <ZoomOut size={18} />
+                        <button
+                            onClick={() => handleZoom(-0.1)}
+                            style={{ padding: '0.5rem', borderRadius: '0.25rem', color: '#ffffff', transition: 'background-color 0.2s', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.background = 'transparent';
+                            }}
+                            title="Zoom Out"
+                        >
+                            {renderIcon(icons?.zoomOut, 18, undefined, '-')}
                         </button>
                     </div>
 
-                    <div className="w-px h-8 bg-white/10" />
+                    <div style={{ width: '1px', height: '32px', background: 'rgba(255, 255, 255, 0.1)' }} />
 
-                    <button onClick={handleReset} className="p-2 hover:bg-red-500/20 hover:text-red-400 rounded text-white transition-colors" title="Reset">
-                        <Undo size={18} />
+                    <button
+                        onClick={handleReset}
+                        style={{ padding: '0.5rem', borderRadius: '0.25rem', color: '#ffffff', transition: 'all 0.2s', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)';
+                            e.currentTarget.style.color = '#f87171';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'transparent';
+                            e.currentTarget.style.color = '#ffffff';
+                        }}
+                        title="Reset"
+                    >
+                        {renderIcon(icons?.undo, 18, undefined, 'Reset')}
                     </button>
                 </div>
             </div>
