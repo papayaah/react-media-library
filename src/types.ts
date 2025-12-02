@@ -174,6 +174,24 @@ export interface ViewerThumbnailProps {
     onClick: () => void;
 }
 
+// Drag & Drop Props - for MediaGrid and RecentMediaGrid
+export interface DragDropProps {
+    /** Enable drag functionality on items */
+    draggable?: boolean;
+
+    /** Called when drag starts - receives asset and native event */
+    onDragStart?: (asset: MediaAsset, event: React.DragEvent) => void;
+
+    /** Called when drag ends */
+    onDragEnd?: (asset: MediaAsset, event: React.DragEvent) => void;
+
+    /** For DnD library users: wrap each item with custom component */
+    itemWrapper?: React.ComponentType<{
+        asset: MediaAsset;
+        children: React.ReactNode;
+    }>;
+}
+
 // Component Preset Interface
 export interface ComponentPreset {
     Card: React.FC<CardProps>;

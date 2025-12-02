@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { useMediaLibraryContext } from './MediaLibraryProvider';
-import { MediaAsset, ComponentPreset, MediaGridIcons } from '../types';
+import { MediaAsset, ComponentPreset, MediaGridIcons, DragDropProps } from '../types';
 import { MediaViewer } from './MediaViewer';
 import { renderIcon } from '../utils/renderIcon';
 
-interface MediaGridProps {
+interface MediaGridProps extends DragDropProps {
     preset: ComponentPreset;
     icons?: MediaGridIcons;
     onSelectionChange?: (selectedAssets: MediaAsset[]) => void;
@@ -52,6 +52,11 @@ interface GridAssetItemProps {
     onDeleteAsset: (asset: MediaAsset) => void;
     renderTypeIcon: (icon: any, size: number) => React.ReactNode;
     iconMap: any;
+    // Drag & drop props
+    draggable?: boolean;
+    isDragging?: boolean;
+    onDragStart?: (e: React.DragEvent) => void;
+    onDragEnd?: (e: React.DragEvent) => void;
 }
 
 const GridAssetItem: React.FC<GridAssetItemProps> = ({
@@ -63,7 +68,11 @@ const GridAssetItem: React.FC<GridAssetItemProps> = ({
     onAssetClick,
     onDeleteAsset,
     renderTypeIcon,
-    iconMap
+    iconMap,
+    draggable,
+    isDragging,
+    onDragStart,
+    onDragEnd,
 }) => {
     const { Card, Image, Badge, Button, Skeleton } = preset;
     const [isImageLoaded, setIsImageLoaded] = useState(false);
@@ -78,7 +87,15 @@ const GridAssetItem: React.FC<GridAssetItemProps> = ({
                 position: 'relative',
                 overflow: 'hidden',
                 border: isSelected ? '2px solid #2563eb' : undefined,
+                // Drag animation styles
+                opacity: isDragging ? 0.4 : 1,
+                transition: 'opacity 0.15s ease-out',
+                cursor: draggable ? (isDragging ? 'grabbing' : 'grab') : 'pointer',
             }}
+            // @ts-expect-error - Card may not have drag props in type but DOM will accept them
+            draggable={draggable}
+            onDragStart={onDragStart}
+            onDragEnd={onDragEnd}
         >
             {/* Selection Indicator - Top Left */}
             {isSelected && (
@@ -251,8 +268,19 @@ const GridAssetItem: React.FC<GridAssetItemProps> = ({
  * 
  * It's UI-agnostic - just pass a preset with your UI components!
  */
-export const MediaGrid: React.FC<MediaGridProps> = ({ preset, icons = {}, onSelectionChange }) => {
+export const MediaGrid: React.FC<MediaGridProps> = ({
+    preset,
+    icons = {},
+    onSelectionChange,
+    draggable = false,
+    onDragStart: onDragStartProp,
+    onDragEnd: onDragEndProp,
+    itemWrapper: ItemWrapper,
+}) => {
     const { assets, loading, uploading, uploadFiles, deleteAsset, isDragging, draggedItemCount, pendingUploads } = useMediaLibraryContext();
+
+    // Track which item is being dragged for animation
+    const [draggingId, setDraggingId] = useState<number | null>(null);
 
     // Filters
     const [searchQuery, setSearchQuery] = useState('');
@@ -331,6 +359,33 @@ export const MediaGrid: React.FC<MediaGridProps> = ({ preset, icons = {}, onSele
     };
 
     const iconMap = useMemo(() => typeIconMap(icons), [icons]);
+
+    // Drag handlers
+    const handleDragStart = (asset: MediaAsset, e: React.DragEvent) => {
+        setDraggingId(asset.id ?? null);
+
+        // Set data transfer with multiple formats for flexibility
+        e.dataTransfer.setData('application/json', JSON.stringify({
+            id: asset.id,
+            fileName: asset.fileName,
+            fileType: asset.fileType,
+            mimeType: asset.mimeType,
+            previewUrl: asset.previewUrl,
+            size: asset.size,
+        }));
+        if (asset.previewUrl) {
+            e.dataTransfer.setData('text/uri-list', asset.previewUrl);
+        }
+        e.dataTransfer.setData('text/plain', asset.fileName);
+        e.dataTransfer.effectAllowed = 'copyMove';
+
+        onDragStartProp?.(asset, e);
+    };
+
+    const handleDragEnd = (asset: MediaAsset, e: React.DragEvent) => {
+        setDraggingId(null);
+        onDragEndProp?.(asset, e);
+    };
 
     return (
         <div style={{ padding: '1rem' }}>
@@ -500,17 +555,23 @@ export const MediaGrid: React.FC<MediaGridProps> = ({ preset, icons = {}, onSele
 
                             {filteredAssets.map((asset) => {
                                 const isSelected = selectedIds.has(asset.id!);
+                                const isItemDragging = draggingId === asset.id;
 
-                                return (
+                                const masonryItem = (
                                     <div key={asset.id} style={{ breakInside: 'avoid', marginBottom: `${masonryGap}px` }}>
                                         <div
                                             onClick={() => handleAssetClick(asset)}
+                                            draggable={draggable && !ItemWrapper}
+                                            onDragStart={(e) => handleDragStart(asset, e)}
+                                            onDragEnd={(e) => handleDragEnd(asset, e)}
                                             style={{
                                                 position: 'relative',
-                                                cursor: 'pointer',
+                                                cursor: draggable ? (isItemDragging ? 'grabbing' : 'grab') : 'pointer',
                                                 border: isSelected ? '2px solid #3b82f6' : 'none',
                                                 borderRadius: 0,
-                                                overflow: 'hidden'
+                                                overflow: 'hidden',
+                                                opacity: isItemDragging ? 0.4 : 1,
+                                                transition: 'opacity 0.15s ease-out',
                                             }}
                                         >
                                             {isSelectMode && (
@@ -540,6 +601,17 @@ export const MediaGrid: React.FC<MediaGridProps> = ({ preset, icons = {}, onSele
                                         </div>
                                     </div>
                                 );
+
+                                // If itemWrapper provided, wrap the item
+                                if (ItemWrapper) {
+                                    return (
+                                        <ItemWrapper key={asset.id} asset={asset}>
+                                            {masonryItem}
+                                        </ItemWrapper>
+                                    );
+                                }
+
+                                return masonryItem;
                             })}
                         </div>
                     ) : viewMode === 'list' ? (
@@ -682,20 +754,37 @@ export const MediaGrid: React.FC<MediaGridProps> = ({ preset, icons = {}, onSele
                                 </div>
                             ))}
 
-                            {filteredAssets.map((asset) => (
-                                <GridAssetItem
-                                    key={asset.id}
-                                    asset={asset}
-                                    preset={preset}
-                                    isSelected={selectedIds.has(asset.id!)}
-                                    isSelectMode={isSelectMode}
-                                    onToggleSelection={toggleSelection}
-                                    onAssetClick={handleAssetClick}
-                                    onDeleteAsset={deleteAsset}
-                                    renderTypeIcon={renderTypeIcon}
-                                    iconMap={iconMap}
-                                />
-                            ))}
+                            {filteredAssets.map((asset) => {
+                                const gridItem = (
+                                    <GridAssetItem
+                                        key={asset.id}
+                                        asset={asset}
+                                        preset={preset}
+                                        isSelected={selectedIds.has(asset.id!)}
+                                        isSelectMode={isSelectMode}
+                                        onToggleSelection={toggleSelection}
+                                        onAssetClick={handleAssetClick}
+                                        onDeleteAsset={deleteAsset}
+                                        renderTypeIcon={renderTypeIcon}
+                                        iconMap={iconMap}
+                                        draggable={draggable && !ItemWrapper}
+                                        isDragging={draggingId === asset.id}
+                                        onDragStart={(e) => handleDragStart(asset, e)}
+                                        onDragEnd={(e) => handleDragEnd(asset, e)}
+                                    />
+                                );
+
+                                // If itemWrapper provided, wrap the item (for dnd-kit, react-dnd, etc.)
+                                if (ItemWrapper) {
+                                    return (
+                                        <ItemWrapper key={asset.id} asset={asset}>
+                                            {gridItem}
+                                        </ItemWrapper>
+                                    );
+                                }
+
+                                return gridItem;
+                            })}
                         </div>
                     )}
                 </>
