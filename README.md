@@ -1,10 +1,10 @@
 # @reactkits.dev/react-media-library
 
-A headless, blazing-fast media library for React 19. **100/100 Lighthouse scores** with minimal setup.
+A headless UI, fast media library for React 19+.
 
-![Lighthouse Scores](https://raw.githubusercontent.com/papayaah/react-media-library/main/demo/lighthouse-result.png)
+![Lighthouse Scores](https://raw.githubusercontent.com/papayaah/react-media-library/master/demo/lighthouse-result.png)
 
-![Demo](https://raw.githubusercontent.com/papayaah/react-media-library/main/demo/lighthouse-demo.gif)
+![Demo](https://raw.githubusercontent.com/papayaah/react-media-library/master/demo/lighthouse-demo.gif)
 
 ## Why This Library?
 
@@ -67,11 +67,11 @@ Built-in presets: `tailwindPreset`, `mantinePreset`
 
 ## Bundle Size
 
-| Module | Gzipped |
-|--------|---------|
-| Core | 17 KB |
-| Image Editor | 4.6 KB (lazy) |
-| Cropper (optional) | 15 KB (lazy) |
+| Module             | Gzipped       |
+| ------------------ | ------------- |
+| Core               | 17 KB         |
+| Image Editor       | 4.6 KB (lazy) |
+| Cropper (optional) | 15 KB (lazy)  |
 
 ## License
 

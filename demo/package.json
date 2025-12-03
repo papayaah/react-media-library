@@ -13,7 +13,7 @@
     "preview": "npm run build && vite preview"
   },
   "dependencies": {
-    "@buzzer/media-library": "file:..",
+    "@reactkits.dev/react-media-library": "file:..",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

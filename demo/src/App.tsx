@@ -1,4 +1,4 @@
-import { MediaLibraryProvider, MediaGrid, tailwindPreset, lucideIcons } from '@buzzer/media-library';
+import { MediaLibraryProvider, MediaGrid, tailwindPreset, lucideIcons } from '@reactkits.dev/react-media-library';
 import './App.css';
 
 function App() {
