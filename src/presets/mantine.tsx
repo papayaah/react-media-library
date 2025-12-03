@@ -79,11 +79,13 @@ export const mantinePreset: ComponentPreset = {
         />
     ),
 
-    Select: ({ value, onChange, options, placeholder, className }: SelectProps) => (
+    Select: ({ value, onChange, options, placeholder, label, 'aria-label': ariaLabel, className }: SelectProps) => (
         <MantineSelect
             value={value}
             onChange={(val) => onChange(val || '')}
             placeholder={placeholder}
+            label={label}
+            aria-label={!label ? (ariaLabel || placeholder) : undefined}
             data={options}
             className={className}
         />

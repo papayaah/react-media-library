@@ -8,18 +8,22 @@
     "files": [
         "dist"
     ],
+    "engines": {
+        "node": ">=24.0.0"
+    },
     "scripts": {
-        "dev": "vite",
+        "dev": "concurrently \"npm run storybook\" \"npm run dev:demo\" --names \"storybook,demo\" --prefix-colors \"blue,green\"",
+        "dev:demo": "cd demo && npm run dev",
         "build": "vite build",
         "lint": "eslint .",
         "preview": "vite preview",
-        "storybook": "storybook dev -p 6006",
+        "storybook": "storybook dev",
         "build-storybook": "storybook build"
     },
     "peerDependencies": {
+        "cropperjs": "^2.1.0",
         "react": "^19.0.0",
-        "react-dom": "^19.0.0",
-        "cropperjs": "^2.1.0"
+        "react-dom": "^19.0.0"
     },
     "peerDependenciesMeta": {
         "cropperjs": {
@@ -44,10 +48,13 @@
         "@types/react-dom": "^19.0.0",
         "@vitejs/plugin-react": "^4.2.1",
         "autoprefixer": "^10.4.19",
+        "concurrently": "^9.2.1",
         "cropperjs": "^2.1.0",
         "postcss": "^8.4.38",
         "postcss-preset-mantine": "^1.17.0",
         "postcss-simple-vars": "^7.0.1",
+        "react": "^19.2.0",
+        "react-dom": "^19.2.0",
         "storybook": "^8.6.14",
         "tailwindcss": "^3.4.3",
         "typescript": "^5.4.5",

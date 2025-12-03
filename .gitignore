@@ -13,6 +13,8 @@ build
 # Misc
 .DS_Store
 *.pem
+.vscode
+.claude
 
 # Debug
 npm-debug.log*

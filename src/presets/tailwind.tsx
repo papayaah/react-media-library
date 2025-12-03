@@ -77,7 +77,7 @@ export const tailwindPreset: ComponentPreset = {
         </div>
     ),
 
-    Select: ({ value, onChange, options, placeholder, label, className = '' }: SelectProps) => {
+    Select: ({ value, onChange, options, placeholder, label, 'aria-label': ariaLabel, className = '' }: SelectProps) => {
         const selectId = `select-${Math.random().toString(36).substr(2, 9)}`;
         return (
             <div className="w-full">
@@ -90,6 +90,7 @@ export const tailwindPreset: ComponentPreset = {
                     id={selectId}
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
+                    aria-label={!label ? (ariaLabel || placeholder) : undefined}
                     className={`
             w-full px-3 py-2 border border-gray-300 rounded-md
             focus:outline-none focus:ring-2 focus:ring-blue-500

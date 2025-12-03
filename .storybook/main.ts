@@ -14,6 +14,12 @@ const config: StorybookConfig = {
     docs: {
         autodocs: 'tag',
     },
+    viteFinal: async (config) => {
+        // Ensure React is properly resolved for Mantine and other dependencies
+        config.resolve = config.resolve || {};
+        config.resolve.dedupe = ['react', 'react-dom'];
+        return config;
+    },
 };
 
 export default config;

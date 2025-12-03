@@ -11,7 +11,9 @@ export { RecentMediaGrid } from './components/RecentMediaGrid';
 export type { RecentMediaGridProps } from './components/RecentMediaGrid';
 
 // Presets
-export { tailwindPreset, mantinePreset, lucideIcons } from './presets';
+export { tailwindPreset, lucideIcons } from './presets';
+// Note: mantinePreset is available but not exported by default to avoid bundling Mantine
+// Import directly: import { mantinePreset } from '@buzzer/media-library/presets/mantine'
 
 // Types
 export type {

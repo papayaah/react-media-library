@@ -2,7 +2,8 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { MantineProvider } from '@mantine/core';
 import { MediaLibraryProvider } from '../components/MediaLibraryProvider';
 import { MediaGrid } from '../components/MediaGrid';
-import { tailwindPreset, mantinePreset, lucideIcons } from '../presets';
+import { tailwindPreset, lucideIcons } from '../presets';
+import { mantinePreset } from '../presets/mantine';
 import '@mantine/core/styles.css';
 
 const meta: Meta<typeof MediaGrid> = {

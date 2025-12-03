@@ -90,6 +90,7 @@ export interface SelectProps {
     options: Array<{ value: string; label: string }>;
     placeholder?: string;
     label?: string;
+    'aria-label'?: string;
     className?: string;
 }
 

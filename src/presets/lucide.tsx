@@ -65,7 +65,7 @@ export const lucideIcons: MediaGridIcons = {
 };
 
 // Debug: Verify icons are loaded (only in development)
-if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+if (typeof window !== 'undefined' && import.meta.env.DEV) {
     console.log('[LucideIcons] Icons loaded:', {
         upload: typeof lucideIcons.upload,
         search: typeof lucideIcons.search,
