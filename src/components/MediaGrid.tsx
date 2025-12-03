@@ -176,7 +176,8 @@ const GridAssetItem: React.FC<GridAssetItemProps> = ({
                     overflow: 'hidden',
                     borderBottom: '1px solid #e5e7eb',
                     position: 'relative',
-                    backgroundColor: '#f3f4f6'
+                    backgroundColor: '#f3f4f6',
+                    flexShrink: 0 // Prevent height collapse
                 }}
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
@@ -184,14 +185,25 @@ const GridAssetItem: React.FC<GridAssetItemProps> = ({
                 {(asset.fileType === 'image' || asset.fileType === 'video') && asset.previewUrl ? (
                     <>
                         {!isImageLoaded && (
-                            <div style={{ position: 'absolute', inset: 0, zIndex: 5 }}>
+                            <div style={{ 
+                                position: 'absolute', 
+                                inset: 0, 
+                                zIndex: 5,
+                                width: '100%',
+                                height: '100%'
+                            }}>
                                 <Skeleton className="w-full h-full" />
                             </div>
                         )}
                         {asset.fileType === 'video' ? (
                             <video
                                 src={asset.previewUrl}
-                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                style={{ 
+                                    width: '100%', 
+                                    height: '100%', 
+                                    objectFit: 'cover',
+                                    display: 'block' // Remove inline spacing
+                                }}
                                 onLoadedData={() => setIsImageLoaded(true)}
                                 muted
                                 loop
@@ -204,7 +216,14 @@ const GridAssetItem: React.FC<GridAssetItemProps> = ({
                                 src={asset.previewUrl}
                                 alt={asset.fileName}
                                 onLoad={() => setIsImageLoaded(true)}
-                                style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: isImageLoaded ? 1 : 0, transition: 'opacity 0.2s' }}
+                                style={{ 
+                                    width: '100%', 
+                                    height: '100%', 
+                                    objectFit: 'cover', 
+                                    opacity: isImageLoaded ? 1 : 0, 
+                                    transition: 'opacity 0.2s',
+                                    display: 'block' // Remove inline spacing
+                                }}
                             />
                         )}
                     </>
@@ -534,9 +553,17 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
 
             {/* Media Grid */}
             {loading ? (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '3rem', paddingBottom: '3rem' }}>
-                    <Loader size="lg" />
-                    <p style={{ marginTop: '1rem', color: '#4b5563' }}>Loading your media assets…</p>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
+                    {/* Show skeleton cards to reserve layout space and prevent CLS */}
+                    {Array.from({ length: 6 }).map((_, i) => (
+                        <div key={`loading-skeleton-${i}`} style={{
+                            aspectRatio: '4/5',
+                            borderRadius: '0.5rem',
+                            overflow: 'hidden'
+                        }}>
+                            <Skeleton className="w-full h-full" />
+                        </div>
+                    ))}
                 </div>
             ) : (
                 <>

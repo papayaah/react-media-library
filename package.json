@@ -1,7 +1,26 @@
 {
-    "name": "@buzzer/media-library",
+    "name": "@reactkits.dev/react-media-library",
     "version": "0.0.1",
     "description": "Headless Media Library for React 19",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/papayaah/react-media-library"
+    },
+    "homepage": "https://github.com/papayaah/react-media-library#readme",
+    "bugs": {
+        "url": "https://github.com/papayaah/react-media-library/issues"
+    },
+    "keywords": [
+        "react",
+        "media-library",
+        "headless",
+        "tailwind",
+        "mantine",
+        "image-upload",
+        "drag-drop",
+        "indexeddb"
+    ],
     "main": "dist/index.js",
     "module": "dist/index.mjs",
     "types": "dist/index.d.ts",
@@ -22,19 +41,23 @@
     },
     "peerDependencies": {
         "cropperjs": "^2.1.0",
+        "lucide-react": ">=0.300.0",
         "react": "^19.0.0",
         "react-dom": "^19.0.0"
     },
     "peerDependenciesMeta": {
         "cropperjs": {
             "optional": true
+        },
+        "lucide-react": {
+            "optional": true
         }
     },
     "dependencies": {
-        "idb": "^8.0.0",
-        "lucide-react": "^0.554.0"
+        "idb": "^8.0.0"
     },
     "devDependencies": {
+        "lucide-react": "^0.554.0",
         "@mantine/core": "^7.15.2",
         "@mantine/hooks": "^7.15.2",
         "@storybook/addon-essentials": "^8.6.14",

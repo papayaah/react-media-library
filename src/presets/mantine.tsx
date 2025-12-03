@@ -114,8 +114,8 @@ export const mantinePreset: ComponentPreset = {
         );
     },
 
-    Image: ({ src, alt, className, onLoad }: ImageProps) => (
-        <MantineImage src={src} alt={alt} className={className} fit="contain" w="100%" h="100%" onLoad={onLoad} />
+    Image: ({ src, alt, className, onLoad, style }: ImageProps) => (
+        <MantineImage src={src} alt={alt} className={className} style={style} fit="cover" w="100%" h="100%" onLoad={onLoad} />
     ),
 
     Modal: ({ isOpen, onClose, title, children }: ModalProps) => (
@@ -157,16 +157,7 @@ export const mantinePreset: ComponentPreset = {
     ),
 
     Skeleton: ({ className }: { className?: string }) => (
-        <MantineCard shadow="sm" padding="lg" radius="md" withBorder className={className}>
-            <MantineSkeleton height={160} radius="md" mb="sm" />
-            <MantineSkeleton height={20} radius="sm" width="70%" mb="xs" />
-            <Group gap="xs" mb="xs">
-                <MantineSkeleton height={20} width={50} radius="xl" />
-                <MantineSkeleton height={20} width={60} radius="xl" />
-            </Group>
-            <MantineSkeleton height={12} width="40%" mb="md" />
-            <MantineSkeleton height={36} radius="sm" />
-        </MantineCard>
+        <MantineSkeleton className={className} style={{ width: '100%', height: '100%' }} />
     ),
 
     UploadCard: ({ onClick, isDragging, className, children }: { onClick: () => void; isDragging: boolean; className?: string; children?: React.ReactNode }) => (

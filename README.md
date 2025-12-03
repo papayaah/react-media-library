@@ -1,113 +1,77 @@
-# React Media Library
+# @reactkits.dev/react-media-library
 
-A lightweight, high-performance media library for React 19 that follows all best practices to ensure maximum speed and efficiency. This library is designed to be as fast as possible while providing a complete set of media management features.
+A headless, blazing-fast media library for React 19. **100/100 Lighthouse scores** with minimal setup.
 
-![Lighthouse Scores](lighthouse-scores.png)
+![Lighthouse Scores](https://raw.githubusercontent.com/papayaah/react-media-library/main/demo/lighthouse-result.png)
 
-## Features
+![Demo](https://raw.githubusercontent.com/papayaah/react-media-library/main/demo/lighthouse-demo.gif)
 
-- Drag & drop support
-- Real-time search by filename
-- Filter by file type (images, videos, audio, documents, other)
-- Date range filtering
-- Select mode with bulk delete operations
-- Individual file deletion
-- Image viewer modal
-- Responsive grid, list, and masonry layouts
-- Loading and empty states
-- Persistent storage using IndexedDB and OPFS
-- UI-agnostic design - works with any UI library
+## Why This Library?
 
-## Smooth Upload Experience
-
-One of the standout features of this library is the **zero-layout-shift upload experience**. When you drag and drop multiple files:
-
-1. **Skeleton loaders appear instantly** matching the exact dimensions of your grid items
-2. **Each file is processed incrementally** - as soon as one file is ready, it replaces its skeleton
-3. **Images fade in smoothly** - the actual image loads behind the skeleton and fades in with a subtle opacity transition
-4. **No jumping or shifting** - the layout remains perfectly stable throughout the entire upload process
-
-This creates a buttery-smooth experience even when uploading dozens of files at once. The skeleton loaders maintain the grid structure while files are being processed, and each image seamlessly transitions into view as it becomes available.
-
-![Smooth Upload Demo](demo-upload.gif)
-*Demo: Drag and drop multiple files with zero layout shift*
+- **Headless** - Bring your own UI. Works with Tailwind, Mantine, or any component library
+- **Fast** - Optimized for performance from day one. Zero layout shift, lazy loading, tree-shakeable
+- **Simple** - Full media library in 10 lines of code
+- **Local Storage** - No server needed. Uses IndexedDB + OPFS
 
 ## Installation
 
-Install the library:
-
 ```bash
-npm install @buzzer/media-library
+npm install @reactkits.dev/react-media-library
+
+# Optional: icons
+npm install lucide-react
 ```
 
-**Icons are optional**: The library does NOT automatically install any icon library. You have three options:
-
-1. **Use the Lucide React preset** (recommended for quick start):
-   ```bash
-   npm install lucide-react  # Must install separately
-   ```
-
-2. **Use your own icon library** - Pass your own icon components (see "Using Your Own Icons" below)
-
-3. **No icons** - Icons are optional. If you don't provide icons, text fallbacks will be used
-
-## Usage
-
-### Using the Lucide Icons Preset (Recommended)
+## Quick Start
 
 ```tsx
-import { MediaLibraryProvider, MediaGrid, tailwindPreset, lucideIcons } from '@buzzer/media-library';
+import {
+  MediaLibraryProvider,
+  MediaGrid,
+  tailwindPreset,
+  lucideIcons
+} from '@reactkits.dev/react-media-library';
 
 function App() {
   return (
     <MediaLibraryProvider enableDragDrop={true}>
-      <MediaGrid preset={tailwindPreset} icons={lucideIcons} />
+      <MediaGrid
+        preset={tailwindPreset}
+        icons={lucideIcons}
+      />
     </MediaLibraryProvider>
   );
 }
 ```
 
-### Using Your Own Icons
+That's it. Drag & drop uploads, search, filters, grid/list/masonry views - all included.
 
-You can use any icon library or provide your own React components:
+## Headless Architecture
+
+The library doesn't ship any UI. You provide components via a `preset`:
 
 ```tsx
-import { MediaLibraryProvider, MediaGrid, tailwindPreset } from '@buzzer/media-library';
-import { Upload, Search, Trash2, Image, Video, Music, FileText, File } from 'your-icon-library';
-
-const icons = {
-  upload: Upload,  // Icon component (not JSX element)
-  search: Search,
-  trash: Trash2,
-  photo: Image,
-  video: Video,
-  audio: Music,
-  document: FileText,
-  file: File,
+const myPreset = {
+  Card: (props) => <div className="my-card" {...props} />,
+  Button: (props) => <button className="my-btn" {...props} />,
+  TextInput: ({ value, onChange }) => (
+    <input value={value} onChange={e => onChange(e.target.value)} />
+  ),
+  // ... see types for full list
 };
 
-function App() {
-  return (
-    <MediaLibraryProvider enableDragDrop={true}>
-      <MediaGrid preset={tailwindPreset} icons={icons} />
-    </MediaLibraryProvider>
-  );
-}
+<MediaGrid preset={myPreset} />
 ```
 
-## Storybook
+Built-in presets: `tailwindPreset`, `mantinePreset`
 
-To launch Storybook and view live examples:
+## Bundle Size
 
-```bash
-npm run storybook
-```
-
-This will start Storybook on http://localhost:6006 where you can see:
-
-- Tailwind CSS preset examples
-- Mantine UI preset examples (light and dark modes)
-- How to create your own custom preset
+| Module | Gzipped |
+|--------|---------|
+| Core | 17 KB |
+| Image Editor | 4.6 KB (lazy) |
+| Cropper (optional) | 15 KB (lazy) |
 
 ## License
 

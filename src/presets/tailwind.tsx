@@ -134,14 +134,15 @@ export const tailwindPreset: ComponentPreset = {
         );
     },
 
-    Image: ({ src, alt, className = '', loading, decoding, onLoad }: ImageProps) => (
+    Image: ({ src, alt, className = '', loading, decoding, onLoad, style }: ImageProps) => (
         <img
             src={src}
             alt={alt}
             loading={loading || 'lazy'}
             decoding={decoding || 'async'}
             onLoad={onLoad}
-            className={`w-full h-full object-contain ${className}`}
+            style={style}
+            className={`w-full h-full object-cover ${className}`}
         />
     ),
 
@@ -223,15 +224,8 @@ export const tailwindPreset: ComponentPreset = {
     ),
 
     Skeleton: ({ className = '' }: { className?: string }) => (
-        <div className={`animate-pulse border rounded-lg p-4 border-gray-200 ${className}`}>
-            <div className="w-full h-[160px] bg-gray-200 rounded-lg mb-3"></div>
-            <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-            <div className="flex gap-2 mb-2">
-                <div className="h-5 bg-gray-200 rounded w-12"></div>
-                <div className="h-5 bg-gray-200 rounded w-16"></div>
-            </div>
-            <div className="h-3 bg-gray-200 rounded w-1/2 mb-3"></div>
-            <div className="h-8 bg-gray-200 rounded w-full"></div>
+        <div className={`animate-pulse bg-gray-200 rounded ${className}`} style={{ width: '100%', height: '100%' }}>
+            {/* Simple skeleton that fills its container */}
         </div>
     ),
 

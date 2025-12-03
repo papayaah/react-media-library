@@ -71,7 +71,10 @@ const AssetItem: React.FC<AssetItemProps> = ({
                         position: 'relative',
                         background: layout === 'masonry' ? 'transparent' : '#f3f4f6',
                         overflow: 'hidden',
-                        ...(layout === 'grid' ? { aspectRatio: '1 / 1' } : {})
+                        ...(layout === 'grid' ? { 
+                            aspectRatio: '1 / 1',
+                            minHeight: 0 // Prevent aspect ratio from being ignored
+                        } : {})
                     }}
                     onMouseEnter={() => setIsHovered(true)}
                     onMouseLeave={() => setIsHovered(false)}
@@ -84,9 +87,23 @@ const AssetItem: React.FC<AssetItemProps> = ({
                     }}
                 >
                     {asset.fileType === 'image' && asset.previewUrl ? (
-                        <div style={{ width: '100%', height: '100%', border: layout === 'masonry' ? 'none' : '1px solid #e5e7eb', borderRadius: layout === 'masonry' ? 0 : undefined, overflow: 'hidden', position: 'relative' }}>
+                        <div style={{ 
+                            width: '100%', 
+                            height: '100%', 
+                            border: layout === 'masonry' ? 'none' : '1px solid #e5e7eb', 
+                            borderRadius: layout === 'masonry' ? 0 : undefined, 
+                            overflow: 'hidden', 
+                            position: 'relative',
+                            display: 'flex' // Ensure proper sizing
+                        }}>
                             {!isImageLoaded && (
-                                <div style={{ position: 'absolute', inset: 0, zIndex: 5 }}>
+                                <div style={{ 
+                                    position: 'absolute', 
+                                    inset: 0, 
+                                    zIndex: 5,
+                                    width: '100%',
+                                    height: '100%'
+                                }}>
                                     <Skeleton className="w-full h-full" />
                                 </div>
                             )}
@@ -94,7 +111,14 @@ const AssetItem: React.FC<AssetItemProps> = ({
                                 src={asset.previewUrl}
                                 alt={asset.fileName}
                                 onLoad={() => setIsImageLoaded(true)}
-                                style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: isImageLoaded ? 1 : 0, transition: 'opacity 0.2s' }}
+                                style={{ 
+                                    width: '100%', 
+                                    height: '100%', 
+                                    objectFit: 'cover', 
+                                    opacity: isImageLoaded ? 1 : 0, 
+                                    transition: 'opacity 0.2s',
+                                    display: 'block' // Remove inline spacing
+                                }}
                             />
                         </div>
                     ) : (
