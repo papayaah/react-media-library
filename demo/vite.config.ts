@@ -4,6 +4,7 @@ import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/react-media-library/',
   plugins: [react()],
   resolve: {
     dedupe: ['react', 'react-dom'],

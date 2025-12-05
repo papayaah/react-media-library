@@ -28,7 +28,7 @@
         "dist"
     ],
     "engines": {
-        "node": ">=24.0.0"
+        "node": ">=22.0.0"
     },
     "scripts": {
         "dev": "concurrently \"npm run storybook\" \"npm run dev:demo\" --names \"storybook,demo\" --prefix-colors \"blue,green\"",
