@@ -1,6 +1,6 @@
 # Product Overview
 
-@buzzer/media-library is a lightweight, high-performance headless media library for React 19. It provides complete media management functionality while remaining UI-agnostic through a preset system.
+@reactkits.dev/media-library is a lightweight, high-performance headless media library for React 19. It provides complete media management functionality while remaining UI-agnostic through a preset system.
 
 ## Core Features
 

@@ -47,8 +47,8 @@ Just pass a preset with your UI components!
 
 **Usage:**
 \`\`\`tsx
-import { MediaLibraryProvider, MediaGrid } from '@buzzer/media-library';
-import { tailwindPreset, lucideIcons } from '@buzzer/media-library/presets';
+import { MediaLibraryProvider, MediaGrid } from '@reactkits.dev/media-library';
+import { tailwindPreset, lucideIcons } from '@reactkits.dev/media-library/presets';
 
 <MediaLibraryProvider>
   <MediaGrid preset={tailwindPreset} icons={lucideIcons} />
@@ -80,8 +80,8 @@ All features work exactly the same, just with Mantine UI components.
 **Usage:**
 \`\`\`tsx
 import { MantineProvider } from '@mantine/core';
-import { MediaLibraryProvider, MediaGrid } from '@buzzer/media-library';
-import { mantinePreset } from '@buzzer/media-library/presets';
+import { MediaLibraryProvider, MediaGrid } from '@reactkits.dev/media-library';
+import { mantinePreset } from '@reactkits.dev/media-library/presets';
 
 <MantineProvider>
   <MediaLibraryProvider>
@@ -133,7 +133,7 @@ export const CreateYourOwnPreset: Story = {
 The MediaGrid component is UI-agnostic. Create a preset for any UI library:
 
 \`\`\`tsx
-import { ComponentPreset } from '@buzzer/media-library';
+import { ComponentPreset } from '@reactkits.dev/media-library';
 
 export const myPreset: ComponentPreset = {
   Card: ({ children, onClick, selected }) => (
@@ -172,7 +172,7 @@ export const myPreset: ComponentPreset = {
 };
 
 // Use it:
-import { lucideIcons } from '@buzzer/media-library/presets';
+import { lucideIcons } from '@reactkits.dev/media-library/presets';
 <MediaGrid preset={myPreset} icons={lucideIcons} />
 \`\`\`
 

@@ -65,13 +65,13 @@ A lightweight recent media grid component perfect for mounting in other apps.
 **Basic Usage:**
 
 \`\`\`tsx
-import { MediaLibraryProvider, RecentMediaGrid } from '@buzzer/media-library';
-import { tailwindPreset } from '@buzzer/media-library/presets';
+import { MediaLibraryProvider, RecentMediaGrid } from '@reactkits.dev/media-library';
+import { tailwindPreset } from '@reactkits.dev/media-library/presets';
 
 // Inside your component
 const [selectedAssets, setSelectedAssets] = useState([]);
 
-import { lucideIcons } from '@buzzer/media-library/presets';
+import { lucideIcons } from '@reactkits.dev/media-library/presets';
 
 <MediaLibraryProvider>
   <RecentMediaGrid
@@ -164,11 +164,11 @@ Same component using the Mantine UI library.
 
 \`\`\`tsx
 import { MantineProvider } from '@mantine/core';
-import { MediaLibraryProvider, RecentMediaGrid } from '@buzzer/media-library';
-import { mantinePreset } from '@buzzer/media-library/presets';
+import { MediaLibraryProvider, RecentMediaGrid } from '@reactkits.dev/media-library';
+import { mantinePreset } from '@reactkits.dev/media-library/presets';
 
 <MantineProvider>
-import { lucideIcons } from '@buzzer/media-library/presets';
+import { lucideIcons } from '@reactkits.dev/media-library/presets';
 
   <MediaLibraryProvider>
     <RecentMediaGrid

@@ -42,7 +42,6 @@ export const useMediaLibrary = () => {
 
             setAssets(assetsWithPreviews);
         } catch (err) {
-            console.error('Failed to load assets:', err);
             setError('Failed to load media library.');
         } finally {
             setLoading(false);
@@ -90,7 +89,6 @@ export const useMediaLibrary = () => {
                 setPendingUploads((prev) => Math.max(0, prev - 1));
             }
         } catch (err) {
-            console.error('Upload failed:', err);
             setError('Failed to upload files.');
         } finally {
             setUploading(false);
@@ -108,7 +106,6 @@ export const useMediaLibrary = () => {
             }
             setAssets((prev) => prev.filter((a) => a.id !== asset.id));
         } catch (err) {
-            console.error('Delete failed:', err);
             setError('Failed to delete asset.');
         }
     }, []);

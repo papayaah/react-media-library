@@ -16,24 +16,20 @@ let dbPromise: Promise<IDBPDatabase<MediaLibraryDB>> | null = null;
 
 export const initDB = (dbName: string = DEFAULT_DB_NAME) => {
     if (!dbPromise) {
-        console.log('[Storage] Initializing IndexedDB:', dbName);
         dbPromise = openDB<MediaLibraryDB>(dbName, 3, {
             upgrade(db, oldVersion, newVersion, transaction) {
-                console.log('[Storage] Upgrading DB from version', oldVersion, 'to', newVersion);
                 let store;
                 if (!db.objectStoreNames.contains('assets')) {
                     store = db.createObjectStore('assets', {
                         keyPath: 'id',
                         autoIncrement: true,
                     });
-                    console.log('[Storage] Created assets object store');
                 } else {
                     store = transaction.objectStore('assets');
                 }
 
                 if (!store.indexNames.contains('by-date')) {
                     store.createIndex('by-date', 'createdAt');
-                    console.log('[Storage] Created by-date index');
                 }
             },
         });
@@ -51,7 +47,6 @@ export const saveFileToOpfs = async (
     file: File,
     directory: string = DEFAULT_OPFS_DIR
 ): Promise<string> => {
-    console.log('[Storage] Saving file to OPFS:', file.name, 'size:', file.size);
     const dirHandle = await getOpfsDirectory(directory);
     const ext = file.name.split('.').pop();
     const uniqueName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
@@ -59,7 +54,6 @@ export const saveFileToOpfs = async (
     const writable = await fileHandle.createWritable();
     await writable.write(file);
     await writable.close();
-    console.log('[Storage] File saved to OPFS:', uniqueName);
     return uniqueName;
 };
 
@@ -72,7 +66,6 @@ export const getFileFromOpfs = async (
         const fileHandle = await dirHandle.getFileHandle(fileName);
         return await fileHandle.getFile();
     } catch (error) {
-        console.error(`Error reading file ${fileName} from OPFS:`, error);
         return null;
     }
 };
@@ -85,7 +78,7 @@ export const deleteFileFromOpfs = async (
         const dirHandle = await getOpfsDirectory(directory);
         await dirHandle.removeEntry(fileName);
     } catch (error) {
-        console.error(`Error deleting file ${fileName} from OPFS:`, error);
+        // Silently fail - file may not exist
     }
 };
 
@@ -98,7 +91,6 @@ export const addAssetToDB = async (asset: Omit<MediaAsset, 'id'>) => {
 export const listAssetsFromDB = async () => {
     const db = await initDB();
     const assets = await db.getAllFromIndex('assets', 'by-date');
-    console.log('[Storage] Loaded assets from DB:', assets.length);
     return assets;
 };
 

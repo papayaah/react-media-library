@@ -14,7 +14,6 @@ import {
     Center,
     Stack,
     UnstyledButton,
-    Group,
 } from '@mantine/core';
 import { ComponentPreset, CardProps, ButtonProps, TextInputProps, SelectProps, CheckboxProps, BadgeProps, ImageProps, ModalProps, LoaderProps, EmptyStateProps, FileButtonProps, GridProps, ViewerProps, ViewerThumbnailProps } from '../types';
 

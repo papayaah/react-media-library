@@ -31,7 +31,6 @@ export const renderIcon = (
         try {
             return React.createElement(IconComponent, { size, ...props });
         } catch (e) {
-            console.warn('Failed to render icon:', e);
             // If creation fails, it might have been a plain object or invalid component
             return fallbackText ? <span>{fallbackText}</span> : null;
         }

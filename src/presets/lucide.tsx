@@ -35,7 +35,7 @@ import {
  *   npm install lucide-react
  * 
  * Usage:
- *   import { lucideIcons } from '@buzzer/media-library';
+ *   import { lucideIcons } from '@reactkits.dev/media-library';
  *   <MediaGrid icons={lucideIcons} />
  */
 export const lucideIcons: MediaGridIcons = {
@@ -63,13 +63,3 @@ export const lucideIcons: MediaGridIcons = {
     undo: Undo,
     hand: Hand,
 };
-
-// Debug: Verify icons are loaded (only in development)
-if (typeof window !== 'undefined' && import.meta.env.DEV) {
-    console.log('[LucideIcons] Icons loaded:', {
-        upload: typeof lucideIcons.upload,
-        search: typeof lucideIcons.search,
-        trash: typeof lucideIcons.trash,
-        totalKeys: Object.keys(lucideIcons).length
-    });
-}

@@ -9,7 +9,7 @@ export default defineConfig({
   resolve: {
     dedupe: ['react', 'react-dom'],
     alias: {
-      '@buzzer/media-library': path.resolve(__dirname, '../src'),
+      '@reactkits.dev/media-library': path.resolve(__dirname, '../src'),
       'react': path.resolve(__dirname, './node_modules/react'),
       'react-dom': path.resolve(__dirname, './node_modules/react-dom'),
     },
@@ -30,8 +30,8 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          // Handle the local @buzzer/media-library package - bundle it with the main code
-          if (id.includes('@buzzer/media-library') || id.includes('/media-library/src/')) {
+          // Handle the local @reactkits.dev/media-library package - bundle it with the main code
+          if (id.includes('@reactkits.dev/media-library') || id.includes('/media-library/src/')) {
             return undefined; // Bundle it in the main chunk
           }
           // Split vendor chunks for better caching

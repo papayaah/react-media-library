@@ -114,7 +114,7 @@ export const MediaViewer: React.FC<MediaViewerProps> = ({
             setIsEditing(false);
             onClose();
         } catch (error) {
-            console.error('Failed to save cropped image:', error);
+            // Silently fail - error handling can be added by parent component if needed
         }
     };
 

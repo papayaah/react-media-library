@@ -4,4 +4,4 @@ export { defaultPreset } from './default';
 
 // Mantine preset is NOT exported here to avoid eager loading
 // This prevents Mantine from being bundled when not used
-// Import directly: import { mantinePreset } from '@buzzer/media-library/presets/mantine'
+// Import directly: import { mantinePreset } from '@reactkits.dev/media-library/presets/mantine'

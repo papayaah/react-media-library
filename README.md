@@ -2,6 +2,8 @@
 
 A headless UI, fast media library for React 19+.
 
+![Bundlephobia min](https://img.shields.io/bundlephobia/min/@reactkits.dev/react-media-library?style=flat&label=minified)
+![Bundlephobia minzip](https://img.shields.io/bundlephobia/minzip/@reactkits.dev/react-media-library?style=flat&label=gzipped)
 ![Lighthouse Scores](https://raw.githubusercontent.com/papayaah/react-media-library/master/demo/lighthouse-result.png)
 
 ## Why This Library?
@@ -10,6 +12,21 @@ A headless UI, fast media library for React 19+.
 - **Fast** - Optimized for performance from day one. Zero layout shift, lazy loading, tree-shakeable
 - **Simple** - Full media library in 10 lines of code
 - **Local Storage** - No server needed. Uses IndexedDB + OPFS
+
+## Features
+
+- **File Upload** - Drag & drop or button upload for images, videos, audio, documents
+- **Search & Filter** - Search by filename, filter by file type (image/video/audio/document)
+- **Date Range Filtering** - Filter media by upload date range
+- **Multiple View Modes** - Grid, List, and Masonry layouts
+- **Image Viewer** - Full-screen modal viewer with navigation
+- **Image Editor** - Crop, rotate, flip, zoom (lazy-loaded, optional)
+- **Selection Mode** - Single or multi-select with bulk delete
+- **Customizable UI** - Headless architecture - bring your own components
+- **Local Storage** - IndexedDB for metadata + OPFS for file storage
+- **Performance** - Lazy loading, code splitting, zero layout shift
+- **Responsive** - Works on desktop, tablet, and mobile
+- **Accessible** - ARIA labels and keyboard navigation support
 
 ## Demo
 
@@ -136,9 +153,10 @@ The demo uses specific Vite optimizations:
 
 If you like what I'm doing, consider following me:
 
-`<a href="https://www.linkedin.com/in/david-ang-0932bb4a/"><img src="https://img.shields.io/badge/LinkedIn-6B7280?style=flat&logo=linkedin&logoColor=white" alt="LinkedIn">``</a>`
-`<a href="https://x.com/papayaahtries"><img src="https://img.shields.io/badge/X-6B7280?style=flat&logo=x&logoColor=white" alt="X">``</a>`
-`<a href="https://www.reddit.com/user/Prize-Coyote-6989/"><img src="https://img.shields.io/badge/Reddit-6B7280?style=flat&logo=reddit&logoColor=white" alt="Reddit">``</a>`
+<a href="https://github.com/papayaah"><img src="https://img.shields.io/badge/GitHub-6B7280?style=flat&logo=github&logoColor=white" alt="GitHub"></a>
+<a href="https://www.linkedin.com/in/david-ang-0932bb4a/"><img src="https://img.shields.io/badge/LinkedIn-6B7280?style=flat&logo=linkedin&logoColor=white" alt="LinkedIn"></a>
+<a href="https://x.com/papayaahtries"><img src="https://img.shields.io/badge/X-6B7280?style=flat&logo=x&logoColor=white" alt="X"></a>
+<a href="https://www.reddit.com/user/Prize-Coyote-6989/"><img src="https://img.shields.io/badge/Reddit-6B7280?style=flat&logo=reddit&logoColor=white" alt="Reddit"></a>
 
 ## License
 

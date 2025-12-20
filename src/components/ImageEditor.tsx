@@ -29,8 +29,8 @@ export const ImageEditor: React.FC<ImageEditorProps> = ({ src, onSave, onCancel,
         // Dynamically import cropperjs only when this component is mounted
         import('cropperjs').then(() => {
             setIsReady(true);
-        }).catch(err => {
-            console.error("Failed to load cropperjs", err);
+        }).catch(() => {
+            // Silently fail - cropperjs may not be installed
         });
     }, []);
 
@@ -85,7 +85,7 @@ export const ImageEditor: React.FC<ImageEditorProps> = ({ src, onSave, onCancel,
                     }
                 }, 'image/png');
             } catch (error) {
-                console.error('Failed to crop image:', error);
+                // Silently fail - error handling can be added by parent component if needed
             }
         }
     };
