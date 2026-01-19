@@ -38,6 +38,7 @@
             }
         },
         "./server": {
+            "types": "./src/server.ts",
             "development": {
                 "types": "./src/server.ts",
                 "import": "./src/server.ts",

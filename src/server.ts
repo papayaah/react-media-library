@@ -213,3 +213,62 @@ export async function downloadFreepikResource(
 
     return res.json();
 }
+
+// ==========================================
+// Next.js Route Handler Factories
+// ==========================================
+
+/**
+ * Creates a Next.js route handler for Freepik icon search.
+ *
+ * Usage in your app/api/freepik/icons/route.ts:
+ * ```ts
+ * import { createFreepikIconsHandler } from '@reactkits.dev/react-media-library/server';
+ * export const GET = createFreepikIconsHandler();
+ * ```
+ */
+export function createFreepikIconsHandler(options?: { apiKey?: string }) {
+    return async function GET(request: Request) {
+        const apiKey = options?.apiKey || process.env.FREEPIK_API_KEY;
+        if (!apiKey) {
+            return Response.json({ error: 'Freepik API key not configured' }, { status: 500 });
+        }
+
+        const { searchParams } = new URL(request.url);
+        const query = searchParams.get('term') || undefined;
+        const order = (searchParams.get('order') as 'relevance' | 'popularity' | 'date') || 'relevance';
+        const page = Number(searchParams.get('page')) || 1;
+        const perPage = Number(searchParams.get('per_page')) || 20;
+
+        try {
+            const result = await searchFreepikIcons({
+                apiKey,
+                query,
+                order,
+                page,
+                perPage,
+            });
+
+            // Normalize to FreepikContent format
+            const content = result.data.map((item) => ({
+                id: String(item.id),
+                name: item.name,
+                thumbnailUrl: item.thumbnails[0]?.url || '',
+                type: 'icon' as const,
+                isFree: item.free_svg,
+                metadata: {
+                    author: item.author,
+                    style: item.style,
+                    family: item.family,
+                    tags: item.tags,
+                    created: item.created,
+                },
+            }));
+
+            return Response.json({ content, pagination: result.meta.pagination });
+        } catch (error: any) {
+            console.error('Freepik API error:', error);
+            return Response.json({ error: error.message }, { status: 500 });
+        }
+    };
+}
