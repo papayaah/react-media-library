@@ -11,12 +11,13 @@ interface MediaLibraryDB extends DBSchema {
 
 const DEFAULT_DB_NAME = 'MediaLibrary';
 const DEFAULT_OPFS_DIR = 'media-library';
+const DEFAULT_THUMB_MAX_DIMENSION = 200;
 
 let dbPromise: Promise<IDBPDatabase<MediaLibraryDB>> | null = null;
 
 export const initDB = (dbName: string = DEFAULT_DB_NAME) => {
     if (!dbPromise) {
-        dbPromise = openDB<MediaLibraryDB>(dbName, 3, {
+        dbPromise = openDB<MediaLibraryDB>(dbName, 4, {
             upgrade(db, oldVersion, newVersion, transaction) {
                 let store;
                 if (!db.objectStoreNames.contains('assets')) {
@@ -45,11 +46,16 @@ const getOpfsDirectory = async (directoryName: string) => {
 
 export const saveFileToOpfs = async (
     file: File,
-    directory: string = DEFAULT_OPFS_DIR
+    directory: string = DEFAULT_OPFS_DIR,
+    options?: { extension?: string; nameHint?: string }
 ): Promise<string> => {
     const dirHandle = await getOpfsDirectory(directory);
-    const ext = file.name.split('.').pop();
-    const uniqueName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const ext =
+        (options?.extension || file.name.split('.').pop() || 'bin')
+            .replace(/^\./, '')
+            .toLowerCase();
+    const hint = (options?.nameHint || 'file').replace(/[^a-z0-9_-]+/gi, '-').slice(0, 40);
+    const uniqueName = `${Date.now()}-${hint}-${Math.random().toString(36).slice(2)}.${ext}`;
     const fileHandle = await dirHandle.getFileHandle(uniqueName, { create: true });
     const writable = await fileHandle.createWritable();
     await writable.write(file);
@@ -82,6 +88,53 @@ export const deleteFileFromOpfs = async (
     }
 };
 
+const fileToObjectUrl = (file: Blob) => URL.createObjectURL(file);
+
+const loadImageFromFile = (file: File) =>
+    new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new Image();
+        const url = fileToObjectUrl(file);
+        img.onload = () => {
+            URL.revokeObjectURL(url);
+            resolve(img);
+        };
+        img.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error('Failed to load image'));
+        };
+        img.decoding = 'async';
+        img.src = url;
+    });
+
+const toThumbnailBlob = async (
+    img: HTMLImageElement,
+    maxDim: number,
+): Promise<{ blob: Blob; width: number; height: number; mimeType: string } | null> => {
+    const width = img.naturalWidth || img.width;
+    const height = img.naturalHeight || img.height;
+    if (!width || !height) return null;
+
+    const scale = Math.min(1, maxDim / Math.max(width, height));
+    const outW = Math.max(1, Math.round(width * scale));
+    const outH = Math.max(1, Math.round(height * scale));
+
+    const canvas = document.createElement('canvas');
+    canvas.width = outW;
+    canvas.height = outH;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, 0, 0, outW, outH);
+
+    const mimeType = 'image/jpeg';
+    const blob = await new Promise<Blob | null>((resolve) => {
+        canvas.toBlob((b) => resolve(b), mimeType, 0.85);
+    });
+    if (!blob) return null;
+    return { blob, width, height, mimeType };
+};
+
 // DB Helpers
 export const addAssetToDB = async (asset: Omit<MediaAsset, 'id'>) => {
     const db = await initDB();
@@ -97,6 +150,65 @@ export const listAssetsFromDB = async () => {
 export const deleteAssetFromDB = async (id: number) => {
     const db = await initDB();
     return db.delete('assets', id);
+};
+
+export const importFileToLibrary = async (
+    file: File,
+    options?: {
+        opfsDirectory?: string;
+        thumbnailMaxDimension?: number;
+    },
+): Promise<number> => {
+    const directory = options?.opfsDirectory || DEFAULT_OPFS_DIR;
+    const fileType = getAssetType(file.type);
+
+    let width: number | undefined;
+    let height: number | undefined;
+    let thumbnailHandleName: string | undefined;
+    let thumbnailMimeType: string | undefined;
+    let thumbnailSize: number | undefined;
+
+    if (fileType === 'image' && typeof window !== 'undefined' && typeof document !== 'undefined') {
+        try {
+            const img = await loadImageFromFile(file);
+            width = img.naturalWidth || img.width;
+            height = img.naturalHeight || img.height;
+
+            const thumb = await toThumbnailBlob(
+                img,
+                options?.thumbnailMaxDimension ?? DEFAULT_THUMB_MAX_DIMENSION,
+            );
+            if (thumb) {
+                const thumbFile = new File([thumb.blob], 'thumb.jpg', { type: thumb.mimeType });
+                thumbnailHandleName = await saveFileToOpfs(thumbFile, directory, {
+                    extension: 'jpg',
+                    nameHint: 'thumb',
+                });
+                thumbnailMimeType = thumb.mimeType;
+                thumbnailSize = thumb.blob.size;
+            }
+        } catch {
+            // Best-effort: still import the original file even if thumbnail/dimensions fail.
+        }
+    }
+
+    const handleName = await saveFileToOpfs(file, directory, { nameHint: file.name || 'upload' });
+    const asset: Omit<MediaAsset, 'id'> = {
+        handleName,
+        thumbnailHandleName,
+        thumbnailMimeType,
+        thumbnailSize,
+        fileName: file.name,
+        fileType,
+        mimeType: file.type,
+        size: file.size,
+        width,
+        height,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+    };
+    const id = await addAssetToDB(asset);
+    return typeof id === 'number' ? id : Number(id);
 };
 
 export const getAssetType = (mimeType: string): MediaType => {

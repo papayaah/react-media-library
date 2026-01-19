@@ -17,6 +17,12 @@ export { tailwindPreset, lucideIcons } from './presets';
 
 // Types
 export type {
+    MediaAIGenerateRequest,
+    MediaAIGeneratedImage,
+    MediaAIGenerator,
+    PexelsImage,
+    MediaPexelsProvider,
+    PexelsImagePickerProps,
     MediaAsset,
     MediaType,
     MediaLibraryConfig,
@@ -33,6 +39,7 @@ export type {
     EmptyStateProps,
     FileButtonProps,
     GridProps,
+    AIGenerateSidebarProps,
 } from './types';
 
 // Services
@@ -45,4 +52,5 @@ export {
     listAssetsFromDB,
     deleteAssetFromDB,
     getAssetType,
+    importFileToLibrary,
 } from './services/storage';

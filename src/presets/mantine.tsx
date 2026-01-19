@@ -1,4 +1,5 @@
 import {
+    Box,
     Card as MantineCard,
     Image as MantineImage,
     Text,
@@ -14,8 +15,10 @@ import {
     Center,
     Stack,
     UnstyledButton,
+    SimpleGrid,
+    Group,
 } from '@mantine/core';
-import { ComponentPreset, CardProps, ButtonProps, TextInputProps, SelectProps, CheckboxProps, BadgeProps, ImageProps, ModalProps, LoaderProps, EmptyStateProps, FileButtonProps, GridProps, ViewerProps, ViewerThumbnailProps } from '../types';
+import { ComponentPreset, CardProps, ButtonProps, TextInputProps, SelectProps, CheckboxProps, BadgeProps, ImageProps, ModalProps, LoaderProps, EmptyStateProps, FileButtonProps, GridProps, ViewerProps, ViewerThumbnailProps, PexelsImagePickerProps } from '../types';
 
 /**
  * Mantine UI Component Preset
@@ -222,5 +225,137 @@ export const mantinePreset: ComponentPreset = {
         >
             <MantineImage src={src} alt={alt} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         </UnstyledButton>
+    ),
+
+    PexelsImagePicker: ({
+        isOpen,
+        onClose,
+        images,
+        loading,
+        selected,
+        onToggleSelect,
+        onSelectAll,
+        onDeselectAll,
+        importing,
+        onImport,
+    }: PexelsImagePickerProps) => (
+        <MantineModal
+            opened={isOpen}
+            onClose={onClose}
+            title={
+                <Group gap="xs">
+                    <Text fw={600}>Pexels Images</Text>
+                </Group>
+            }
+            size="lg"
+            styles={{
+                body: { padding: 0 },
+            }}
+        >
+            <Box p="md" style={{ borderBottom: '1px solid #e9ecef' }}>
+                <Group justify="space-between">
+                    <Text size="sm" c="dimmed">
+                        {images.length} images available • {selected.size} selected
+                    </Text>
+                    <Group gap="xs">
+                        <MantineButton variant="subtle" size="xs" onClick={selected.size === images.length ? onDeselectAll : onSelectAll}>
+                            {selected.size === images.length ? 'Deselect All' : 'Select All'}
+                        </MantineButton>
+                    </Group>
+                </Group>
+            </Box>
+
+            <Box p="md" style={{ maxHeight: 400, overflowY: 'auto' }}>
+                {loading ? (
+                    <Center p="xl">
+                        <MantineLoader size="sm" />
+                    </Center>
+                ) : images.length === 0 ? (
+                    <Center p="xl">
+                        <Text c="dimmed">No images found</Text>
+                    </Center>
+                ) : (
+                    <SimpleGrid cols={3} spacing="sm">
+                        {images.map((img) => (
+                            <Box
+                                key={img.url}
+                                style={{
+                                    position: 'relative',
+                                    aspectRatio: '1',
+                                    borderRadius: 8,
+                                    overflow: 'hidden',
+                                    cursor: 'pointer',
+                                    border: selected.has(img.url) ? '3px solid #667eea' : '1px solid #dee2e6',
+                                    transition: 'all 0.15s',
+                                }}
+                                onClick={() => onToggleSelect(img.url)}
+                            >
+                                <img
+                                    src={img.url}
+                                    alt={img.name}
+                                    style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        objectFit: 'cover',
+                                    }}
+                                />
+                                <MantineCheckbox
+                                    checked={selected.has(img.url)}
+                                    onChange={() => onToggleSelect(img.url)}
+                                    style={{
+                                        position: 'absolute',
+                                        top: 8,
+                                        left: 8,
+                                    }}
+                                    styles={{
+                                        input: {
+                                            backgroundColor: selected.has(img.url) ? '#667eea' : 'rgba(255,255,255,0.9)',
+                                            borderColor: selected.has(img.url) ? '#667eea' : '#dee2e6',
+                                        },
+                                    }}
+                                />
+                                <Box
+                                    style={{
+                                        position: 'absolute',
+                                        bottom: 0,
+                                        left: 0,
+                                        right: 0,
+                                        padding: 6,
+                                        background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)',
+                                    }}
+                                >
+                                    <Text
+                                        size="xs"
+                                        c="white"
+                                        style={{
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            whiteSpace: 'nowrap',
+                                        }}
+                                    >
+                                        {img.name}
+                                    </Text>
+                                </Box>
+                            </Box>
+                        ))}
+                    </SimpleGrid>
+                )}
+            </Box>
+
+            <Box p="md" style={{ borderTop: '1px solid #e9ecef' }}>
+                <Group justify="flex-end" gap="sm">
+                    <MantineButton variant="subtle" onClick={onClose}>
+                        Cancel
+                    </MantineButton>
+                    <MantineButton
+                        onClick={onImport}
+                        loading={importing}
+                        disabled={selected.size === 0}
+                    >
+                        Import {selected.size > 0 ? `(${selected.size})` : ''}
+                    </MantineButton>
+                </Group>
+            </Box>
+        </MantineModal>
     ),
 };

@@ -1,4 +1,4 @@
-import { ComponentPreset, CardProps, ButtonProps, TextInputProps, SelectProps, CheckboxProps, BadgeProps, ImageProps, ModalProps, LoaderProps, EmptyStateProps, FileButtonProps, GridProps, ViewerProps, ViewerThumbnailProps } from '../types';
+import { ComponentPreset, CardProps, ButtonProps, TextInputProps, SelectProps, CheckboxProps, BadgeProps, ImageProps, ModalProps, LoaderProps, EmptyStateProps, FileButtonProps, GridProps, ViewerProps, ViewerThumbnailProps, PexelsImagePickerProps } from '../types';
 
 /**
  * Tailwind CSS Component Preset
@@ -286,4 +286,101 @@ export const tailwindPreset: ComponentPreset = {
             />
         </div>
     ),
+
+    PexelsImagePicker: ({
+        isOpen,
+        onClose,
+        images,
+        loading,
+        selected,
+        onToggleSelect,
+        onSelectAll,
+        onDeselectAll,
+        importing,
+        onImport,
+    }: PexelsImagePickerProps) => {
+        if (!isOpen) return null;
+        return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+                    <div className="p-4 border-b flex items-center justify-between">
+                        <h2 className="text-lg font-semibold">Pexels Images</h2>
+                        <button
+                            onClick={onClose}
+                            className="text-gray-500 hover:text-gray-700 text-xl"
+                        >
+                            ×
+                        </button>
+                    </div>
+                    <div className="p-4 border-b flex items-center justify-between text-sm text-gray-600">
+                        <span>{images.length} images available • {selected.size} selected</span>
+                        <button
+                            onClick={selected.size === images.length ? onDeselectAll : onSelectAll}
+                            className="text-blue-600 hover:text-blue-700"
+                        >
+                            {selected.size === images.length ? 'Deselect All' : 'Select All'}
+                        </button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-4" style={{ maxHeight: 400 }}>
+                        {loading ? (
+                            <div className="flex items-center justify-center p-8">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                            </div>
+                        ) : images.length === 0 ? (
+                            <div className="text-center p-8 text-gray-500">No images found</div>
+                        ) : (
+                            <div className="grid grid-cols-3 gap-4">
+                                {images.map((img) => (
+                                    <div
+                                        key={img.url}
+                                        onClick={() => onToggleSelect(img.url)}
+                                        className={`
+                                            relative aspect-square rounded-lg overflow-hidden cursor-pointer border-2 transition-all
+                                            ${selected.has(img.url) ? 'border-blue-500' : 'border-gray-200'}
+                                        `}
+                                    >
+                                        <img
+                                            src={img.url}
+                                            alt={img.name}
+                                            className="w-full h-full object-cover"
+                                        />
+                                        <input
+                                            type="checkbox"
+                                            checked={selected.has(img.url)}
+                                            onChange={() => onToggleSelect(img.url)}
+                                            className="absolute top-2 left-2 w-5 h-5"
+                                        />
+                                        <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent">
+                                            <p className="text-white text-xs truncate">{img.name}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                    <div className="p-4 border-t flex justify-end gap-2">
+                        <button
+                            onClick={onClose}
+                            className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={onImport}
+                            disabled={selected.size === 0 || importing}
+                            className={`
+                                px-4 py-2 rounded font-medium
+                                ${selected.size === 0 || importing
+                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                                }
+                            `}
+                        >
+                            {importing ? 'Importing...' : `Import ${selected.size > 0 ? `(${selected.size})` : ''}`}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    },
 };

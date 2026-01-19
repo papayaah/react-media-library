@@ -1,12 +1,60 @@
 import { ReactNode } from 'react';
 
+export type MediaAIGenerateRequest = {
+    prompt: string;
+    width: number;
+    height: number;
+    /** Provider/model identifier (provider-specific) */
+    model?: string;
+    negativePrompt?: string;
+    steps?: number;
+    seed?: number;
+};
+
+export type MediaAIGeneratedImage = {
+    file: File;
+    metadata?: {
+        provider?: string;
+        model?: string;
+        prompt?: string;
+        negativePrompt?: string;
+        seed?: number;
+        steps?: number;
+        width?: number;
+        height?: number;
+        createdAt?: number;
+    };
+};
+
+export type MediaAIGenerator = {
+    generateImages: (req: MediaAIGenerateRequest) => Promise<MediaAIGeneratedImage[]>;
+};
+
+export type PexelsImage = {
+    name: string;
+    url: string;
+    size?: number;
+    modified?: string | number;
+};
+
+export type MediaPexelsProvider = {
+    fetchImages: () => Promise<PexelsImage[]>;
+};
+
 export interface MediaAsset {
     id?: number;
     handleName: string;
+    /** Optional thumbnail stored in OPFS for faster grids/previews */
+    thumbnailHandleName?: string;
+    thumbnailMimeType?: string;
+    thumbnailSize?: number;
     fileName: string;
     fileType: MediaType;
     mimeType: string;
     size: number;
+    /** For images, store intrinsic dimensions */
+    width?: number;
+    height?: number;
     createdAt: number;
     updatedAt: number;
     previewUrl?: string;
@@ -175,6 +223,39 @@ export interface ViewerThumbnailProps {
     onClick: () => void;
 }
 
+export interface AIGenerateSidebarProps {
+    isOpen: boolean;
+    onClose: () => void;
+    prompt: string;
+    onPromptChange: (value: string) => void;
+    width: string;
+    onWidthChange: (value: string) => void;
+    height: string;
+    onHeightChange: (value: string) => void;
+    steps: string;
+    onStepsChange: (value: string) => void;
+    model: string;
+    onModelChange: (value: string) => void;
+    onPresetChange: (value: string) => void;
+    error: string | null;
+    generating: boolean;
+    onGenerate: () => void;
+    onCancel: () => void;
+}
+
+export interface PexelsImagePickerProps {
+    isOpen: boolean;
+    onClose: () => void;
+    images: PexelsImage[];
+    loading: boolean;
+    selected: Set<string>;
+    onToggleSelect: (url: string) => void;
+    onSelectAll: () => void;
+    onDeselectAll: () => void;
+    importing: boolean;
+    onImport: () => void;
+}
+
 // Drag & Drop Props - for MediaGrid and RecentMediaGrid
 export interface DragDropProps {
     /** Enable drag functionality on items */
@@ -211,4 +292,8 @@ export interface ComponentPreset {
     UploadCard: React.FC<UploadCardProps>;
     Viewer: React.FC<ViewerProps>;
     ViewerThumbnail: React.FC<ViewerThumbnailProps>;
+    /** Optional: AI Generate Sidebar. If provided, renders as sidebar instead of modal. */
+    AIGenerateSidebar?: React.FC<AIGenerateSidebarProps>;
+    /** Optional: Pexels Image Picker. If provided, enables Pexels integration. */
+    PexelsImagePicker?: React.FC<PexelsImagePickerProps>;
 }

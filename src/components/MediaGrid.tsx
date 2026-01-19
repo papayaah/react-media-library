@@ -296,7 +296,30 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
     onDragEnd: onDragEndProp,
     itemWrapper: ItemWrapper,
 }) => {
-    const { assets, loading, uploading, uploadFiles, deleteAsset, isDragging, draggedItemCount, pendingUploads } = useMediaLibraryContext();
+    const {
+        assets,
+        loading,
+        uploading,
+        uploadFiles,
+        deleteAsset,
+        isDragging,
+        draggedItemCount,
+        pendingUploads,
+        aiAvailable,
+        aiGenerating,
+        aiError,
+        generateImages,
+        pexelsAvailable,
+        pexelsImages,
+        pexelsLoading,
+        pexelsSelected,
+        pexelsImporting,
+        fetchPexelsImages,
+        togglePexelsSelect,
+        selectAllPexels,
+        deselectAllPexels,
+        importPexelsImages,
+    } = useMediaLibraryContext();
 
     // Track which item is being dragged for animation
     const [draggingId, setDraggingId] = useState<number | null>(null);
@@ -318,7 +341,18 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
     const [viewMode, setViewMode] = useState<'grid' | 'list' | 'masonry'>('grid');
     const [masonryGap, setMasonryGap] = useState(1);
 
-    const { Button, TextInput, Select, Checkbox, Badge, Loader, FileButton, Skeleton, UploadCard } = preset;
+    const { Button, TextInput, Select, Checkbox, Badge, Loader, FileButton, Skeleton, UploadCard, Modal, AIGenerateSidebar, PexelsImagePicker } = preset;
+
+    // AI generation UI (optional)
+    const [aiModalOpen, setAiModalOpen] = useState(false);
+    
+    // Pexels UI (optional)
+    const [pexelsModalOpen, setPexelsModalOpen] = useState(false);
+    const [aiPrompt, setAiPrompt] = useState('');
+    const [aiWidth, setAiWidth] = useState('768');
+    const [aiHeight, setAiHeight] = useState('768');
+    const [aiSteps, setAiSteps] = useState('25');
+    const [aiModel, setAiModel] = useState('');
 
     // Filtered assets
     const filteredAssets = useMemo(() => {
@@ -432,8 +466,210 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                     </Button>
                 )}
 
+                {aiAvailable && (
+                    <Button
+                        variant="secondary"
+                        onClick={() => setAiModalOpen(true)}
+                        disabled={uploading || aiGenerating}
+                    >
+                        Generate
+                    </Button>
+                )}
+
+                {pexelsAvailable && (
+                    <Button
+                        variant="secondary"
+                        onClick={() => {
+                            setPexelsModalOpen(true);
+                            fetchPexelsImages();
+                        }}
+                        disabled={uploading}
+                    >
+                        Pexels
+                    </Button>
+                )}
+
                 {uploading && <Loader size="sm" />}
             </div>
+
+            {aiAvailable && AIGenerateSidebar ? (
+                <AIGenerateSidebar
+                    isOpen={aiModalOpen}
+                    onClose={() => setAiModalOpen(false)}
+                    prompt={aiPrompt}
+                    onPromptChange={setAiPrompt}
+                    width={aiWidth}
+                    onWidthChange={setAiWidth}
+                    height={aiHeight}
+                    onHeightChange={setAiHeight}
+                    steps={aiSteps}
+                    onStepsChange={setAiSteps}
+                    model={aiModel}
+                    onModelChange={setAiModel}
+                    onPresetChange={(val) => {
+                        if (!val) return;
+                        setAiWidth(val);
+                        setAiHeight(val);
+                    }}
+                    error={aiError}
+                    generating={aiGenerating}
+                    onGenerate={async () => {
+                        const width = Math.max(1, Number(aiWidth) || 768);
+                        const height = Math.max(1, Number(aiHeight) || 768);
+                        const steps = Number(aiSteps);
+                        await generateImages({
+                            prompt: aiPrompt.trim(),
+                            width,
+                            height,
+                            steps: Number.isFinite(steps) ? steps : undefined,
+                            model: aiModel.trim() || undefined,
+                        });
+                        setAiModalOpen(false);
+                    }}
+                    onCancel={() => setAiModalOpen(false)}
+                />
+            ) : aiAvailable ? (
+                <Modal
+                    isOpen={aiModalOpen}
+                    onClose={() => setAiModalOpen(false)}
+                    title="Generate image"
+                >
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        <div>
+                            <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                                Prompt
+                            </div>
+                            <TextInput
+                                value={aiPrompt}
+                                onChange={setAiPrompt}
+                                placeholder="Describe the image you want..."
+                            />
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                            <div>
+                                <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                                    Width
+                                </div>
+                                <TextInput
+                                    value={aiWidth}
+                                    onChange={setAiWidth}
+                                    type="number"
+                                    placeholder="768"
+                                />
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                                    Height
+                                </div>
+                                <TextInput
+                                    value={aiHeight}
+                                    onChange={setAiHeight}
+                                    type="number"
+                                    placeholder="768"
+                                />
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                            <div>
+                                <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                                    Preset
+                                </div>
+                                <Select
+                                    value=""
+                                    onChange={(val) => {
+                                        if (!val) return;
+                                        setAiWidth(val);
+                                        setAiHeight(val);
+                                    }}
+                                    placeholder="Pick a size"
+                                    options={[
+                                        { value: '512', label: '512 × 512' },
+                                        { value: '768', label: '768 × 768' },
+                                        { value: '1024', label: '1024 × 1024' },
+                                    ]}
+                                />
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                                    Steps (optional)
+                                </div>
+                                <TextInput
+                                    value={aiSteps}
+                                    onChange={setAiSteps}
+                                    type="number"
+                                    placeholder="25"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                                Model (optional)
+                            </div>
+                            <TextInput
+                                value={aiModel}
+                                onChange={setAiModel}
+                                placeholder="e.g. stability-ai/sdxl:… (provider-specific)"
+                            />
+                        </div>
+
+                        {aiError && (
+                            <div style={{ color: '#b91c1c', fontSize: '0.875rem' }}>
+                                {aiError}
+                            </div>
+                        )}
+
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.25rem' }}>
+                            <Button variant="secondary" onClick={() => setAiModalOpen(false)} disabled={aiGenerating}>
+                                Cancel
+                            </Button>
+                            <Button
+                                variant="primary"
+                                loading={aiGenerating}
+                                disabled={!aiPrompt.trim()}
+                                onClick={async () => {
+                                    const width = Math.max(1, Number(aiWidth) || 768);
+                                    const height = Math.max(1, Number(aiHeight) || 768);
+                                    const steps = Number(aiSteps);
+                                    await generateImages({
+                                        prompt: aiPrompt.trim(),
+                                        width,
+                                        height,
+                                        steps: Number.isFinite(steps) ? steps : undefined,
+                                        model: aiModel.trim() || undefined,
+                                    });
+                                    setAiModalOpen(false);
+                                }}
+                            >
+                                Generate
+                            </Button>
+                        </div>
+                    </div>
+                </Modal>
+            ) : null}
+
+            {pexelsAvailable && PexelsImagePicker && (
+                <PexelsImagePicker
+                    isOpen={pexelsModalOpen}
+                    onClose={() => {
+                        setPexelsModalOpen(false);
+                        deselectAllPexels();
+                    }}
+                    images={pexelsImages}
+                    loading={pexelsLoading}
+                    selected={pexelsSelected}
+                    onToggleSelect={togglePexelsSelect}
+                    onSelectAll={selectAllPexels}
+                    onDeselectAll={deselectAllPexels}
+                    importing={pexelsImporting}
+                    onImport={async () => {
+                        await importPexelsImages();
+                        setPexelsModalOpen(false);
+                    }}
+                />
+            )}
 
             {/* Selection Bar */}
             {isSelectMode && filteredAssets.length > 0 && (
