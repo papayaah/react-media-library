@@ -41,6 +41,111 @@ export type MediaPexelsProvider = {
     fetchImages: () => Promise<PexelsImage[]>;
 };
 
+// Freepik API Response Types (matching actual API)
+export type FreepikIconResponse = {
+    data: Array<{
+        id: number;
+        name: string;
+        slug: string;
+        free_svg: boolean;
+        created: string;
+        author: {
+            id: number;
+            name: string;
+            slug: string;
+            avatar: string;
+            assets: number;
+        };
+        style: {
+            id: number;
+            name: string;
+        };
+        family: {
+            id: number;
+            name: string;
+            total: number;
+        };
+        thumbnails: Array<{
+            url: string;
+            width: number;
+            height: number;
+        }>;
+        tags: Array<{
+            name: string;
+            slug: string;
+        }>;
+    }>;
+    meta: {
+        pagination: {
+            current_page: number;
+            last_page: number;
+            per_page: number;
+            total: number;
+        };
+    };
+};
+
+export type FreepikDownloadResponse = {
+    data: {
+        filename: string;
+        url: string;
+    };
+};
+
+// Normalized content type for the package
+export type FreepikContent = {
+    id: string;
+    name: string;
+    thumbnailUrl: string;
+    type: 'icon' | 'photo' | 'vector';
+    isFree: boolean;
+    metadata?: {
+        author?: {
+            id: number;
+            name: string;
+            slug: string;
+        };
+        style?: {
+            id: number;
+            name: string;
+        };
+        family?: {
+            id: number;
+            name: string;
+        };
+        tags?: Array<{ name: string; slug: string }>;
+        created?: string;
+    };
+};
+
+export type MediaFreepikProvider = {
+    /** Search for icons. Calls consumer's backend route. */
+    searchIcons: (options: {
+        query?: string;
+        order?: 'relevance' | 'popularity' | 'date';
+        page?: number;
+        perPage?: number;
+    }) => Promise<FreepikContent[]>;
+
+    /** Search for photos/vectors/resources. Calls consumer's backend route. */
+    searchResources?: (options: {
+        query?: string;
+        type?: 'photo' | 'vector' | 'psd';
+        order?: string;
+        page?: number;
+        perPage?: number;
+    }) => Promise<FreepikContent[]>;
+
+    /** Download content. Calls consumer's backend route which returns a File. */
+    downloadContent: (
+        content: FreepikContent,
+        options?: {
+            pngSize?: number;
+            format?: string;
+        }
+    ) => Promise<File>;
+};
+
 export interface MediaAsset {
     id?: number;
     handleName: string;
@@ -256,6 +361,34 @@ export interface PexelsImagePickerProps {
     onImport: () => void;
 }
 
+export interface FreepikContentPickerProps {
+    isOpen: boolean;
+    onClose: () => void;
+
+    // Content state
+    content: FreepikContent[];
+    loading: boolean;
+
+    // Search state
+    searchQuery: string;
+    onSearchQueryChange: (query: string) => void;
+    onSearch: () => void;
+
+    // Selection state
+    selected: Set<string>;
+    onToggleSelect: (id: string) => void;
+    onSelectAll: () => void;
+    onDeselectAll: () => void;
+
+    // Import state
+    importing: boolean;
+    onImport: () => void;
+
+    // Order/sort
+    order: 'relevance' | 'popularity' | 'date';
+    onOrderChange: (order: 'relevance' | 'popularity' | 'date') => void;
+}
+
 // Drag & Drop Props - for MediaGrid and RecentMediaGrid
 export interface DragDropProps {
     /** Enable drag functionality on items */
@@ -296,4 +429,6 @@ export interface ComponentPreset {
     AIGenerateSidebar?: React.FC<AIGenerateSidebarProps>;
     /** Optional: Pexels Image Picker. If provided, enables Pexels integration. */
     PexelsImagePicker?: React.FC<PexelsImagePickerProps>;
+    /** Optional: Freepik Content Picker. If provided, enables Freepik integration. */
+    FreepikContentPicker?: React.FC<FreepikContentPickerProps>;
 }

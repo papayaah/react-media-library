@@ -1,7 +1,7 @@
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useMediaLibrary } from '../hooks/useMediaLibrary';
 import { useMediaDragDrop } from '../hooks/useMediaDragDrop';
-import { MediaAIGenerateRequest, MediaAsset, MediaAIGenerator, MediaPexelsProvider } from '../types';
+import { MediaAIGenerateRequest, MediaAsset, MediaAIGenerator, MediaPexelsProvider, MediaFreepikProvider, FreepikContent } from '../types';
 
 interface MediaLibraryContextValue {
     assets: MediaAsset[];
@@ -23,6 +23,21 @@ interface MediaLibraryContextValue {
     selectAllPexels: () => void;
     deselectAllPexels: () => void;
     importPexelsImages: () => Promise<void>;
+    // Freepik
+    freepikAvailable: boolean;
+    freepikContent: FreepikContent[];
+    freepikLoading: boolean;
+    freepikSelected: Set<string>;
+    freepikImporting: boolean;
+    freepikSearchQuery: string;
+    setFreepikSearchQuery: (query: string) => void;
+    freepikOrder: 'relevance' | 'popularity' | 'date';
+    setFreepikOrder: (order: 'relevance' | 'popularity' | 'date') => void;
+    searchFreepikIcons: () => Promise<void>;
+    toggleFreepikSelect: (id: string) => void;
+    selectAllFreepik: () => void;
+    deselectAllFreepik: () => void;
+    importFreepikContent: () => Promise<void>;
     deleteAsset: (asset: MediaAsset) => Promise<void>;
     refresh: () => Promise<void>;
     isDragging: boolean;
@@ -45,6 +60,7 @@ interface MediaLibraryProviderProps {
     enableDragDrop?: boolean;
     ai?: MediaAIGenerator;
     pexels?: MediaPexelsProvider;
+    freepik?: MediaFreepikProvider;
 }
 
 export const MediaLibraryProvider: React.FC<MediaLibraryProviderProps> = ({
@@ -52,8 +68,9 @@ export const MediaLibraryProvider: React.FC<MediaLibraryProviderProps> = ({
     enableDragDrop = true,
     ai,
     pexels,
+    freepik,
 }) => {
-    const mediaLibrary = useMediaLibrary({ ai, pexels });
+    const mediaLibrary = useMediaLibrary({ ai, pexels, freepik });
     const { isDragging, draggedItemCount } = useMediaDragDrop(
         mediaLibrary.uploadFiles,
         !enableDragDrop || mediaLibrary.uploading

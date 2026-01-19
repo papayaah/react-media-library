@@ -7,9 +7,9 @@ import {
     deleteFileFromOpfs,
     importFileToLibrary,
 } from '../services/storage';
-import { MediaAIGenerateRequest, MediaAIGenerator, MediaAsset, MediaPexelsProvider, PexelsImage } from '../types';
+import { MediaAIGenerateRequest, MediaAIGenerator, MediaAsset, MediaPexelsProvider, PexelsImage, MediaFreepikProvider, FreepikContent } from '../types';
 
-export const useMediaLibrary = (options?: { ai?: MediaAIGenerator; pexels?: MediaPexelsProvider }) => {
+export const useMediaLibrary = (options?: { ai?: MediaAIGenerator; pexels?: MediaPexelsProvider; freepik?: MediaFreepikProvider }) => {
     const [assets, setAssets] = useState<MediaAsset[]>([]);
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
@@ -24,6 +24,14 @@ export const useMediaLibrary = (options?: { ai?: MediaAIGenerator; pexels?: Medi
     const [pexelsLoading, setPexelsLoading] = useState(false);
     const [pexelsSelected, setPexelsSelected] = useState<Set<string>>(new Set());
     const [pexelsImporting, setPexelsImporting] = useState(false);
+
+    // Freepik state
+    const [freepikContent, setFreepikContent] = useState<FreepikContent[]>([]);
+    const [freepikLoading, setFreepikLoading] = useState(false);
+    const [freepikSelected, setFreepikSelected] = useState<Set<string>>(new Set());
+    const [freepikImporting, setFreepikImporting] = useState(false);
+    const [freepikSearchQuery, setFreepikSearchQuery] = useState('');
+    const [freepikOrder, setFreepikOrder] = useState<'relevance' | 'popularity' | 'date'>('relevance');
 
     const assetsRef = useRef<MediaAsset[]>([]);
     const setAssetsTracked = useCallback((updater: MediaAsset[] | ((prev: MediaAsset[]) => MediaAsset[])) => {
@@ -224,6 +232,68 @@ export const useMediaLibrary = (options?: { ai?: MediaAIGenerator; pexels?: Medi
         }
     }, [pexelsSelected, uploadFiles]);
 
+    // Freepik methods
+    const searchFreepikIcons = useCallback(async () => {
+        const freepik = options?.freepik;
+        if (!freepik) return;
+
+        setFreepikLoading(true);
+        try {
+            const results = await freepik.searchIcons({
+                query: freepikSearchQuery || undefined,
+                order: freepikOrder,
+            });
+            setFreepikContent(results);
+        } catch (err) {
+            setError('Failed to search Freepik icons.');
+        } finally {
+            setFreepikLoading(false);
+        }
+    }, [options?.freepik, freepikSearchQuery, freepikOrder]);
+
+    const toggleFreepikSelect = useCallback((id: string) => {
+        setFreepikSelected((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) {
+                next.delete(id);
+            } else {
+                next.add(id);
+            }
+            return next;
+        });
+    }, []);
+
+    const selectAllFreepik = useCallback(() => {
+        setFreepikSelected(new Set(freepikContent.map((c) => c.id)));
+    }, [freepikContent]);
+
+    const deselectAllFreepik = useCallback(() => {
+        setFreepikSelected(new Set());
+    }, []);
+
+    const importFreepikContent = useCallback(async () => {
+        const freepik = options?.freepik;
+        if (freepikSelected.size === 0 || !freepik) return;
+
+        setFreepikImporting(true);
+        try {
+            const files: File[] = [];
+            for (const id of Array.from(freepikSelected)) {
+                const content = freepikContent.find((c) => c.id === id);
+                if (!content) continue;
+                // Download SVG by default (no pngSize) for better quality and scalability
+                const file = await freepik.downloadContent(content);
+                files.push(file);
+            }
+            await uploadFiles(files);
+            setFreepikSelected(new Set());
+        } catch (err) {
+            setError('Failed to import Freepik content.');
+        } finally {
+            setFreepikImporting(false);
+        }
+    }, [freepikSelected, freepikContent, options?.freepik, uploadFiles]);
+
     return {
         assets,
         loading,
@@ -245,6 +315,21 @@ export const useMediaLibrary = (options?: { ai?: MediaAIGenerator; pexels?: Medi
         selectAllPexels,
         deselectAllPexels,
         importPexelsImages,
+        // Freepik
+        freepikAvailable: Boolean(options?.freepik),
+        freepikContent,
+        freepikLoading,
+        freepikSelected,
+        freepikImporting,
+        freepikSearchQuery,
+        setFreepikSearchQuery,
+        freepikOrder,
+        setFreepikOrder,
+        searchFreepikIcons,
+        toggleFreepikSelect,
+        selectAllFreepik,
+        deselectAllFreepik,
+        importFreepikContent,
         deleteAsset,
         refresh: loadAssets,
     };

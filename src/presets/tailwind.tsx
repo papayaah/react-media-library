@@ -1,4 +1,4 @@
-import { ComponentPreset, CardProps, ButtonProps, TextInputProps, SelectProps, CheckboxProps, BadgeProps, ImageProps, ModalProps, LoaderProps, EmptyStateProps, FileButtonProps, GridProps, ViewerProps, ViewerThumbnailProps, PexelsImagePickerProps } from '../types';
+import { ComponentPreset, CardProps, ButtonProps, TextInputProps, SelectProps, CheckboxProps, BadgeProps, ImageProps, ModalProps, LoaderProps, EmptyStateProps, FileButtonProps, GridProps, ViewerProps, ViewerThumbnailProps, PexelsImagePickerProps, FreepikContentPickerProps } from '../types';
 
 /**
  * Tailwind CSS Component Preset
@@ -358,6 +358,150 @@ export const tailwindPreset: ComponentPreset = {
                             </div>
                         )}
                     </div>
+                    <div className="p-4 border-t flex justify-end gap-2">
+                        <button
+                            onClick={onClose}
+                            className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={onImport}
+                            disabled={selected.size === 0 || importing}
+                            className={`
+                                px-4 py-2 rounded font-medium
+                                ${selected.size === 0 || importing
+                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                                }
+                            `}
+                        >
+                            {importing ? 'Importing...' : `Import ${selected.size > 0 ? `(${selected.size})` : ''}`}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    },
+
+    FreepikContentPicker: ({
+        isOpen,
+        onClose,
+        content,
+        loading,
+        searchQuery,
+        onSearchQueryChange,
+        onSearch,
+        selected,
+        onToggleSelect,
+        onSelectAll,
+        onDeselectAll,
+        importing,
+        onImport,
+        order,
+        onOrderChange,
+    }: FreepikContentPickerProps) => {
+        if (!isOpen) return null;
+        return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+                    <div className="p-4 border-b flex items-center justify-between">
+                        <h2 className="text-lg font-semibold">Freepik Icons</h2>
+                        <button
+                            onClick={onClose}
+                            className="text-gray-500 hover:text-gray-700 text-xl"
+                        >
+                            ×
+                        </button>
+                    </div>
+
+                    {/* Search & Filters */}
+                    <div className="p-4 border-b">
+                        <div className="flex gap-2 mb-3">
+                            <input
+                                type="text"
+                                placeholder="Search icons..."
+                                value={searchQuery}
+                                onChange={(e) => onSearchQueryChange(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') onSearch();
+                                }}
+                                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <select
+                                value={order}
+                                onChange={(e) => onOrderChange(e.target.value as 'relevance' | 'popularity' | 'date')}
+                                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="relevance">Relevance</option>
+                                <option value="popularity">Popular</option>
+                                <option value="date">Newest</option>
+                            </select>
+                            <button
+                                onClick={onSearch}
+                                disabled={loading}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                            >
+                                Search
+                            </button>
+                        </div>
+                        <div className="flex items-center justify-between text-sm text-gray-600">
+                            <span>{content.length} icons found • {selected.size} selected</span>
+                            <button
+                                onClick={selected.size === content.length && content.length > 0 ? onDeselectAll : onSelectAll}
+                                disabled={content.length === 0}
+                                className="text-blue-600 hover:text-blue-700 disabled:opacity-50"
+                            >
+                                {selected.size === content.length && content.length > 0 ? 'Deselect All' : 'Select All'}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Content Grid */}
+                    <div className="flex-1 overflow-y-auto p-4" style={{ maxHeight: 400 }}>
+                        {loading ? (
+                            <div className="flex items-center justify-center p-8">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                            </div>
+                        ) : content.length === 0 ? (
+                            <div className="text-center p-8 text-gray-500">No icons found. Try a different search term.</div>
+                        ) : (
+                            <div className="grid grid-cols-4 gap-3">
+                                {content.map((item) => (
+                                    <div
+                                        key={item.id}
+                                        onClick={() => onToggleSelect(item.id)}
+                                        className={`
+                                            relative aspect-square rounded-lg overflow-hidden cursor-pointer border-2 transition-all bg-gray-50 flex items-center justify-center p-2
+                                            ${selected.has(item.id) ? 'border-blue-500' : 'border-gray-200'}
+                                        `}
+                                    >
+                                        <img
+                                            src={item.thumbnailUrl}
+                                            alt={item.name}
+                                            className="max-w-[80%] max-h-[80%] object-contain"
+                                        />
+                                        <input
+                                            type="checkbox"
+                                            checked={selected.has(item.id)}
+                                            onChange={() => onToggleSelect(item.id)}
+                                            className="absolute top-2 left-2 w-4 h-4"
+                                        />
+                                        {item.isFree && (
+                                            <span className="absolute top-2 right-2 px-1.5 py-0.5 text-[10px] bg-green-500 text-white rounded">
+                                                Free
+                                            </span>
+                                        )}
+                                        <div className="absolute bottom-0 left-0 right-0 p-1 bg-gradient-to-t from-black/60 to-transparent">
+                                            <p className="text-white text-[10px] truncate">{item.name}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Footer */}
                     <div className="p-4 border-t flex justify-end gap-2">
                         <button
                             onClick={onClose}

@@ -23,6 +23,12 @@ export type {
     PexelsImage,
     MediaPexelsProvider,
     PexelsImagePickerProps,
+    // Freepik
+    FreepikIconResponse,
+    FreepikDownloadResponse,
+    FreepikContent,
+    MediaFreepikProvider,
+    FreepikContentPickerProps,
     MediaAsset,
     MediaType,
     MediaLibraryConfig,
@@ -54,3 +60,17 @@ export {
     getAssetType,
     importFileToLibrary,
 } from './services/storage';
+
+// Freepik API helpers (for backend routes)
+export {
+    searchFreepikIcons,
+    downloadFreepikIcon,
+    searchFreepikResources,
+    downloadFreepikResource,
+} from './services/freepik-api';
+export type {
+    SearchFreepikIconsOptions,
+    DownloadFreepikIconOptions,
+    SearchFreepikResourcesOptions,
+    DownloadFreepikResourceOptions,
+} from './services/freepik-api';

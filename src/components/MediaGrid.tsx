@@ -176,7 +176,11 @@ const GridAssetItem: React.FC<GridAssetItemProps> = ({
                     overflow: 'hidden',
                     borderBottom: '1px solid #e5e7eb',
                     position: 'relative',
-                    backgroundColor: '#f3f4f6',
+                    // Always use a light background with subtle checkerboard to show transparency
+                    backgroundColor: '#ffffff',
+                    backgroundImage: 'linear-gradient(45deg, #f5f5f5 25%, transparent 25%), linear-gradient(-45deg, #f5f5f5 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f5f5f5 75%), linear-gradient(-45deg, transparent 75%, #f5f5f5 75%)',
+                    backgroundSize: '16px 16px',
+                    backgroundPosition: '0 0, 0 8px, 8px -8px, -8px 0px',
                     flexShrink: 0 // Prevent height collapse
                 }}
                 onMouseEnter={() => setIsHovered(true)}
@@ -185,9 +189,9 @@ const GridAssetItem: React.FC<GridAssetItemProps> = ({
                 {(asset.fileType === 'image' || asset.fileType === 'video') && asset.previewUrl ? (
                     <>
                         {!isImageLoaded && (
-                            <div style={{ 
-                                position: 'absolute', 
-                                inset: 0, 
+                            <div style={{
+                                position: 'absolute',
+                                inset: 0,
                                 zIndex: 5,
                                 width: '100%',
                                 height: '100%'
@@ -198,9 +202,9 @@ const GridAssetItem: React.FC<GridAssetItemProps> = ({
                         {asset.fileType === 'video' ? (
                             <video
                                 src={asset.previewUrl}
-                                style={{ 
-                                    width: '100%', 
-                                    height: '100%', 
+                                style={{
+                                    width: '100%',
+                                    height: '100%',
                                     objectFit: 'cover',
                                     display: 'block' // Remove inline spacing
                                 }}
@@ -216,11 +220,12 @@ const GridAssetItem: React.FC<GridAssetItemProps> = ({
                                 src={asset.previewUrl}
                                 alt={asset.fileName}
                                 onLoad={() => setIsImageLoaded(true)}
-                                style={{ 
-                                    width: '100%', 
-                                    height: '100%', 
-                                    objectFit: 'cover', 
-                                    opacity: isImageLoaded ? 1 : 0, 
+                                style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'contain',
+                                    padding: '8px',
+                                    opacity: isImageLoaded ? 1 : 0,
                                     transition: 'opacity 0.2s',
                                     display: 'block' // Remove inline spacing
                                 }}
@@ -319,6 +324,21 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
         selectAllPexels,
         deselectAllPexels,
         importPexelsImages,
+        // Freepik
+        freepikAvailable,
+        freepikContent,
+        freepikLoading,
+        freepikSelected,
+        freepikImporting,
+        freepikSearchQuery,
+        setFreepikSearchQuery,
+        freepikOrder,
+        setFreepikOrder,
+        searchFreepikIcons,
+        toggleFreepikSelect,
+        selectAllFreepik,
+        deselectAllFreepik,
+        importFreepikContent,
     } = useMediaLibraryContext();
 
     // Track which item is being dragged for animation
@@ -341,13 +361,16 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
     const [viewMode, setViewMode] = useState<'grid' | 'list' | 'masonry'>('grid');
     const [masonryGap, setMasonryGap] = useState(1);
 
-    const { Button, TextInput, Select, Checkbox, Badge, Loader, FileButton, Skeleton, UploadCard, Modal, AIGenerateSidebar, PexelsImagePicker } = preset;
+    const { Button, TextInput, Select, Checkbox, Badge, Loader, FileButton, Skeleton, UploadCard, Modal, AIGenerateSidebar, PexelsImagePicker, FreepikContentPicker } = preset;
 
     // AI generation UI (optional)
     const [aiModalOpen, setAiModalOpen] = useState(false);
-    
+
     // Pexels UI (optional)
     const [pexelsModalOpen, setPexelsModalOpen] = useState(false);
+
+    // Freepik UI (optional)
+    const [freepikModalOpen, setFreepikModalOpen] = useState(false);
     const [aiPrompt, setAiPrompt] = useState('');
     const [aiWidth, setAiWidth] = useState('768');
     const [aiHeight, setAiHeight] = useState('768');
@@ -453,10 +476,11 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
             </div>
 
             {/* Actions */}
-            <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                 {!loading && filteredAssets.length > 0 && (
                     <Button
                         variant={isSelectMode ? 'primary' : 'outline'}
+                        size="sm"
                         onClick={() => {
                             setIsSelectMode(!isSelectMode);
                             setSelectedIds(new Set());
@@ -469,6 +493,7 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                 {aiAvailable && (
                     <Button
                         variant="secondary"
+                        size="sm"
                         onClick={() => setAiModalOpen(true)}
                         disabled={uploading || aiGenerating}
                     >
@@ -479,6 +504,7 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                 {pexelsAvailable && (
                     <Button
                         variant="secondary"
+                        size="sm"
                         onClick={() => {
                             setPexelsModalOpen(true);
                             fetchPexelsImages();
@@ -486,6 +512,20 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                         disabled={uploading}
                     >
                         Pexels
+                    </Button>
+                )}
+
+                {freepikAvailable && (
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                            setFreepikModalOpen(true);
+                            searchFreepikIcons();
+                        }}
+                        disabled={uploading}
+                    >
+                        Freepik
                     </Button>
                 )}
 
@@ -668,6 +708,32 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                         await importPexelsImages();
                         setPexelsModalOpen(false);
                     }}
+                />
+            )}
+
+            {freepikAvailable && FreepikContentPicker && (
+                <FreepikContentPicker
+                    isOpen={freepikModalOpen}
+                    onClose={() => {
+                        setFreepikModalOpen(false);
+                        deselectAllFreepik();
+                    }}
+                    content={freepikContent}
+                    loading={freepikLoading}
+                    searchQuery={freepikSearchQuery}
+                    onSearchQueryChange={setFreepikSearchQuery}
+                    onSearch={searchFreepikIcons}
+                    selected={freepikSelected}
+                    onToggleSelect={toggleFreepikSelect}
+                    onSelectAll={selectAllFreepik}
+                    onDeselectAll={deselectAllFreepik}
+                    importing={freepikImporting}
+                    onImport={async () => {
+                        await importFreepikContent();
+                        setFreepikModalOpen(false);
+                    }}
+                    order={freepikOrder}
+                    onOrderChange={setFreepikOrder}
                 />
             )}
 

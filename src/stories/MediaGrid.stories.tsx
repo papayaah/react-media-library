@@ -4,7 +4,7 @@ import { MediaLibraryProvider } from '../components/MediaLibraryProvider';
 import { MediaGrid } from '../components/MediaGrid';
 import { tailwindPreset, lucideIcons } from '../presets';
 import { mantinePreset } from '../presets/mantine';
-import type { MediaAIGenerator, MediaPexelsProvider } from '../types';
+import type { MediaAIGenerator, MediaPexelsProvider, MediaFreepikProvider, FreepikContent } from '../types';
 import '@mantine/core/styles.css';
 
 const meta: Meta<typeof MediaGrid> = {
@@ -371,6 +371,152 @@ This story demonstrates **both AI Generate and Pexels** working together in the 
 
 - Both features use mock providers by default.
 - Optional: set environment variables to use real backends.
+`,
+            },
+        },
+    },
+};
+
+const STORYBOOK_FREEPIK_URL: string | undefined =
+    env.STORYBOOK_FREEPIK_URL || env.VITE_STORYBOOK_FREEPIK_URL;
+
+const mockFreepikProvider: MediaFreepikProvider = {
+    async searchIcons(options) {
+        // Optional "real backend" mode
+        if (STORYBOOK_FREEPIK_URL) {
+            const params = new URLSearchParams();
+            if (options.query) params.set('term', options.query);
+            if (options.order) params.set('order', options.order);
+            const res = await fetch(`${STORYBOOK_FREEPIK_URL}?${params}`);
+            const data = await res.json();
+            return data.content || [];
+        }
+
+        // Default mock mode: return placeholder icons
+        const mockIcons: FreepikContent[] = [
+            {
+                id: 'mock-1',
+                name: 'Home Icon',
+                thumbnailUrl: 'https://cdn-icons-png.flaticon.com/128/25/25694.png',
+                type: 'icon',
+                isFree: true,
+            },
+            {
+                id: 'mock-2',
+                name: 'User Icon',
+                thumbnailUrl: 'https://cdn-icons-png.flaticon.com/128/747/747376.png',
+                type: 'icon',
+                isFree: true,
+            },
+            {
+                id: 'mock-3',
+                name: 'Settings Icon',
+                thumbnailUrl: 'https://cdn-icons-png.flaticon.com/128/3524/3524659.png',
+                type: 'icon',
+                isFree: false,
+            },
+            {
+                id: 'mock-4',
+                name: 'Search Icon',
+                thumbnailUrl: 'https://cdn-icons-png.flaticon.com/128/54/54481.png',
+                type: 'icon',
+                isFree: true,
+            },
+            {
+                id: 'mock-5',
+                name: 'Heart Icon',
+                thumbnailUrl: 'https://cdn-icons-png.flaticon.com/128/833/833472.png',
+                type: 'icon',
+                isFree: true,
+            },
+            {
+                id: 'mock-6',
+                name: 'Star Icon',
+                thumbnailUrl: 'https://cdn-icons-png.flaticon.com/128/1828/1828884.png',
+                type: 'icon',
+                isFree: false,
+            },
+            {
+                id: 'mock-7',
+                name: 'Mail Icon',
+                thumbnailUrl: 'https://cdn-icons-png.flaticon.com/128/561/561127.png',
+                type: 'icon',
+                isFree: true,
+            },
+            {
+                id: 'mock-8',
+                name: 'Phone Icon',
+                thumbnailUrl: 'https://cdn-icons-png.flaticon.com/128/724/724664.png',
+                type: 'icon',
+                isFree: true,
+            },
+        ];
+
+        // Filter by search query if provided
+        if (options.query) {
+            const q = options.query.toLowerCase();
+            return mockIcons.filter(icon => icon.name.toLowerCase().includes(q));
+        }
+
+        return mockIcons;
+    },
+
+    async downloadContent(content) {
+        // Fetch the thumbnail and return as a File
+        const res = await fetch(content.thumbnailUrl);
+        const blob = await res.blob();
+        return new File([blob], `${content.name.replace(/\s+/g, '-').toLowerCase()}.png`, { type: 'image/png' });
+    },
+};
+
+export const MantineWithFreepik: Story = {
+    render: () => (
+        <MantineProvider>
+            <MediaLibraryProvider enableDragDrop={true} freepik={mockFreepikProvider}>
+                <MediaGrid preset={mantinePreset} icons={lucideIcons} />
+            </MediaLibraryProvider>
+        </MantineProvider>
+    ),
+    parameters: {
+        docs: {
+            description: {
+                story: `
+This story demonstrates the **Freepik Icons** integration inside the MediaGrid.
+
+- Default mode uses **mock** icons from Flaticon CDN (no API keys needed).
+- Click "Freepik" button to open the picker modal.
+- Search for icons, select them, and import to your library.
+- Optional: set \`STORYBOOK_FREEPIK_URL\` to point to a local backend endpoint.
+`,
+            },
+        },
+    },
+};
+
+export const MantineWithAllProviders: Story = {
+    render: () => (
+        <MantineProvider>
+            <MediaLibraryProvider
+                enableDragDrop={true}
+                ai={mockAIGenerator}
+                pexels={mockPexelsProvider}
+                freepik={mockFreepikProvider}
+            >
+                <MediaGrid preset={mantinePreset} icons={lucideIcons} />
+            </MediaLibraryProvider>
+        </MantineProvider>
+    ),
+    parameters: {
+        docs: {
+            description: {
+                story: `
+This story demonstrates **all providers** working together in the MediaGrid:
+
+- **AI Generate** - Create images from text prompts
+- **Pexels** - Import stock photos
+- **Freepik** - Import icons
+
+All features use mock providers by default for Storybook demos.
 `,
             },
         },

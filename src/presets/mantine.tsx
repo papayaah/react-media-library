@@ -18,7 +18,7 @@ import {
     SimpleGrid,
     Group,
 } from '@mantine/core';
-import { ComponentPreset, CardProps, ButtonProps, TextInputProps, SelectProps, CheckboxProps, BadgeProps, ImageProps, ModalProps, LoaderProps, EmptyStateProps, FileButtonProps, GridProps, ViewerProps, ViewerThumbnailProps, PexelsImagePickerProps } from '../types';
+import { ComponentPreset, CardProps, ButtonProps, TextInputProps, SelectProps, CheckboxProps, BadgeProps, ImageProps, ModalProps, LoaderProps, EmptyStateProps, FileButtonProps, GridProps, ViewerProps, ViewerThumbnailProps, PexelsImagePickerProps, FreepikContentPickerProps } from '../types';
 
 /**
  * Mantine UI Component Preset
@@ -342,6 +342,194 @@ export const mantinePreset: ComponentPreset = {
                 )}
             </Box>
 
+            <Box p="md" style={{ borderTop: '1px solid #e9ecef' }}>
+                <Group justify="flex-end" gap="sm">
+                    <MantineButton variant="subtle" onClick={onClose}>
+                        Cancel
+                    </MantineButton>
+                    <MantineButton
+                        onClick={onImport}
+                        loading={importing}
+                        disabled={selected.size === 0}
+                    >
+                        Import {selected.size > 0 ? `(${selected.size})` : ''}
+                    </MantineButton>
+                </Group>
+            </Box>
+        </MantineModal>
+    ),
+
+    FreepikContentPicker: ({
+        isOpen,
+        onClose,
+        content,
+        loading,
+        searchQuery,
+        onSearchQueryChange,
+        onSearch,
+        selected,
+        onToggleSelect,
+        onSelectAll,
+        onDeselectAll,
+        importing,
+        onImport,
+        order,
+        onOrderChange,
+    }: FreepikContentPickerProps) => (
+        <MantineModal
+            opened={isOpen}
+            onClose={onClose}
+            title={
+                <Group gap="xs">
+                    <Text fw={600}>Freepik Icons</Text>
+                </Group>
+            }
+            size="lg"
+            styles={{
+                body: { padding: 0 },
+            }}
+        >
+            {/* Search & Filters */}
+            <Box p="md" style={{ borderBottom: '1px solid #e9ecef' }}>
+                <Group gap="sm" mb="sm">
+                    <MantineTextInput
+                        placeholder="Search icons..."
+                        value={searchQuery}
+                        onChange={(e) => onSearchQueryChange(e.target.value)}
+                        style={{ flex: 1 }}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') onSearch();
+                        }}
+                    />
+                    <MantineSelect
+                        value={order}
+                        onChange={(val) => onOrderChange((val as 'relevance' | 'popularity' | 'date') || 'relevance')}
+                        data={[
+                            { value: 'relevance', label: 'Relevance' },
+                            { value: 'popularity', label: 'Popular' },
+                            { value: 'date', label: 'Newest' },
+                        ]}
+                        style={{ width: 120 }}
+                    />
+                    <MantineButton onClick={onSearch} disabled={loading}>
+                        Search
+                    </MantineButton>
+                </Group>
+                <Group justify="space-between">
+                    <Text size="sm" c="dimmed">
+                        {content.length} icons found • {selected.size} selected
+                    </Text>
+                    <Group gap="xs">
+                        <MantineButton
+                            variant="subtle"
+                            size="xs"
+                            onClick={selected.size === content.length && content.length > 0 ? onDeselectAll : onSelectAll}
+                            disabled={content.length === 0}
+                        >
+                            {selected.size === content.length && content.length > 0 ? 'Deselect All' : 'Select All'}
+                        </MantineButton>
+                    </Group>
+                </Group>
+            </Box>
+
+            {/* Content Grid */}
+            <Box p="md" style={{ maxHeight: 400, overflowY: 'auto' }}>
+                {loading ? (
+                    <Center p="xl">
+                        <MantineLoader size="sm" />
+                    </Center>
+                ) : content.length === 0 ? (
+                    <Center p="xl">
+                        <Text c="dimmed">No icons found. Try a different search term.</Text>
+                    </Center>
+                ) : (
+                    <SimpleGrid cols={4} spacing="sm">
+                        {content.map((item) => (
+                            <Box
+                                key={item.id}
+                                style={{
+                                    position: 'relative',
+                                    aspectRatio: '1',
+                                    borderRadius: 8,
+                                    overflow: 'hidden',
+                                    cursor: 'pointer',
+                                    border: selected.has(item.id) ? '3px solid #667eea' : '1px solid #dee2e6',
+                                    transition: 'all 0.15s',
+                                    backgroundColor: '#f8f9fa',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    padding: 8,
+                                }}
+                                onClick={() => onToggleSelect(item.id)}
+                            >
+                                <img
+                                    src={item.thumbnailUrl}
+                                    alt={item.name}
+                                    style={{
+                                        maxWidth: '80%',
+                                        maxHeight: '80%',
+                                        objectFit: 'contain',
+                                    }}
+                                />
+                                <MantineCheckbox
+                                    checked={selected.has(item.id)}
+                                    onChange={() => onToggleSelect(item.id)}
+                                    style={{
+                                        position: 'absolute',
+                                        top: 6,
+                                        left: 6,
+                                    }}
+                                    styles={{
+                                        input: {
+                                            backgroundColor: selected.has(item.id) ? '#667eea' : 'rgba(255,255,255,0.9)',
+                                            borderColor: selected.has(item.id) ? '#667eea' : '#dee2e6',
+                                        },
+                                    }}
+                                />
+                                {item.isFree && (
+                                    <MantineBadge
+                                        size="xs"
+                                        color="green"
+                                        style={{
+                                            position: 'absolute',
+                                            top: 6,
+                                            right: 6,
+                                        }}
+                                    >
+                                        Free
+                                    </MantineBadge>
+                                )}
+                                <Box
+                                    style={{
+                                        position: 'absolute',
+                                        bottom: 0,
+                                        left: 0,
+                                        right: 0,
+                                        padding: 4,
+                                        background: 'linear-gradient(to top, rgba(0,0,0,0.6), transparent)',
+                                    }}
+                                >
+                                    <Text
+                                        size="xs"
+                                        c="white"
+                                        style={{
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            whiteSpace: 'nowrap',
+                                            fontSize: 10,
+                                        }}
+                                    >
+                                        {item.name}
+                                    </Text>
+                                </Box>
+                            </Box>
+                        ))}
+                    </SimpleGrid>
+                )}
+            </Box>
+
+            {/* Footer */}
             <Box p="md" style={{ borderTop: '1px solid #e9ecef' }}>
                 <Group justify="flex-end" gap="sm">
                     <MantineButton variant="subtle" onClick={onClose}>
