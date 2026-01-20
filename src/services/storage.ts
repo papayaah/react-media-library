@@ -106,9 +106,26 @@ const loadImageFromFile = (file: File) =>
         img.src = url;
     });
 
+// Check if the image has transparency by drawing it and checking alpha channel
+const hasTransparency = (img: HTMLImageElement, ctx: CanvasRenderingContext2D, w: number, h: number): boolean => {
+    try {
+        const imageData = ctx.getImageData(0, 0, w, h);
+        const data = imageData.data;
+        // Check alpha channel (every 4th byte starting at index 3)
+        for (let i = 3; i < data.length; i += 4) {
+            if (data[i] < 255) return true;
+        }
+        return false;
+    } catch {
+        // If getImageData fails (e.g., CORS), assume transparency for SVG
+        return false;
+    }
+};
+
 const toThumbnailBlob = async (
     img: HTMLImageElement,
     maxDim: number,
+    sourceMimeType?: string,
 ): Promise<{ blob: Blob; width: number; height: number; mimeType: string } | null> => {
     const width = img.naturalWidth || img.width;
     const height = img.naturalHeight || img.height;
@@ -127,9 +144,32 @@ const toThumbnailBlob = async (
     ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(img, 0, 0, outW, outH);
 
-    const mimeType = 'image/jpeg';
+    // Check if source format supports transparency
+    const transparentFormats = ['image/png', 'image/webp', 'image/svg+xml', 'image/gif'];
+    const sourceSupportsTransparency = sourceMimeType && transparentFormats.includes(sourceMimeType);
+
+    // Use PNG for formats that support transparency, JPEG otherwise
+    // PNG preserves transparency, JPEG is smaller but no alpha channel
+    let mimeType: string;
+    let quality: number | undefined;
+
+    if (sourceSupportsTransparency) {
+        // Check if image actually has transparency
+        const hasAlpha = hasTransparency(img, ctx, outW, outH);
+        if (hasAlpha) {
+            mimeType = 'image/png';
+            quality = undefined; // PNG doesn't use quality parameter
+        } else {
+            mimeType = 'image/jpeg';
+            quality = 0.85;
+        }
+    } else {
+        mimeType = 'image/jpeg';
+        quality = 0.85;
+    }
+
     const blob = await new Promise<Blob | null>((resolve) => {
-        canvas.toBlob((b) => resolve(b), mimeType, 0.85);
+        canvas.toBlob((b) => resolve(b), mimeType, quality);
     });
     if (!blob) return null;
     return { blob, width, height, mimeType };
@@ -177,11 +217,14 @@ export const importFileToLibrary = async (
             const thumb = await toThumbnailBlob(
                 img,
                 options?.thumbnailMaxDimension ?? DEFAULT_THUMB_MAX_DIMENSION,
+                file.type, // Pass source mime type to preserve transparency
             );
             if (thumb) {
-                const thumbFile = new File([thumb.blob], 'thumb.jpg', { type: thumb.mimeType });
+                // Use correct extension based on thumbnail format
+                const thumbExtension = thumb.mimeType === 'image/png' ? 'png' : 'jpg';
+                const thumbFile = new File([thumb.blob], `thumb.${thumbExtension}`, { type: thumb.mimeType });
                 thumbnailHandleName = await saveFileToOpfs(thumbFile, directory, {
-                    extension: 'jpg',
+                    extension: thumbExtension,
                     nameHint: 'thumb',
                 });
                 thumbnailMimeType = thumb.mimeType;

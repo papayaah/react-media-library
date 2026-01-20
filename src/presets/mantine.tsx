@@ -191,8 +191,20 @@ export const mantinePreset: ComponentPreset = {
             withCloseButton={false}
             padding={0}
             styles={{ body: { height: '100vh', display: 'flex' } }}
+            zIndex={1100}
         >
-            <div style={{ flex: 1, position: 'relative', backgroundColor: 'var(--mantine-color-body)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{
+                flex: 1,
+                position: 'relative',
+                // Checkerboard background for transparency support
+                backgroundColor: '#1a1a1a',
+                backgroundImage: 'linear-gradient(45deg, #252525 25%, transparent 25%), linear-gradient(-45deg, #252525 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #252525 75%), linear-gradient(-45deg, transparent 75%, #252525 75%)',
+                backgroundSize: '20px 20px',
+                backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+            }}>
                 {main}
                 <div style={{ position: 'absolute', top: '1rem', right: '1rem', zIndex: 10 }}>
                     {actions}
@@ -220,7 +232,11 @@ export const mantinePreset: ComponentPreset = {
                 border: selected ? '2px solid var(--mantine-color-blue-6)' : '2px solid transparent',
                 opacity: selected ? 1 : 0.6,
                 transition: 'all 0.2s',
-                backgroundColor: 'light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6))',
+                // Checkerboard background for transparency support
+                backgroundColor: '#ffffff',
+                backgroundImage: 'linear-gradient(45deg, #e5e5e5 25%, transparent 25%), linear-gradient(-45deg, #e5e5e5 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e5e5e5 75%), linear-gradient(-45deg, transparent 75%, #e5e5e5 75%)',
+                backgroundSize: '12px 12px',
+                backgroundPosition: '0 0, 0 6px, 6px -6px, -6px 0px',
             }}
         >
             <MantineImage src={src} alt={alt} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />

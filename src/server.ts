@@ -25,7 +25,8 @@ export interface SearchFreepikIconsOptions {
 export interface DownloadFreepikIconOptions {
     apiKey: string;
     iconId: string;
-    pngSize?: number; // e.g., 512, 256, 128, 64
+    format?: 'svg' | 'png' | 'gif' | 'mp4' | 'aep' | 'json' | 'psd' | 'eps';
+    pngSize?: number; // e.g., 512, 256, 128, 64, 32, 24, 16 - only applies when format is 'png'
 }
 
 export interface SearchFreepikResourcesOptions {
@@ -129,6 +130,8 @@ export async function downloadFreepikIcon(
     options: DownloadFreepikIconOptions
 ): Promise<FreepikDownloadResponse> {
     const params = new URLSearchParams();
+    // Default to SVG for best quality and transparency support
+    if (options.format) params.set('format', options.format);
     if (options.pngSize) params.set('png_size', String(options.pngSize));
 
     const url = `${FREEPIK_API_BASE}/icons/${options.iconId}/download?${params}`;
@@ -268,6 +271,67 @@ export function createFreepikIconsHandler(options?: { apiKey?: string }) {
             return Response.json({ content, pagination: result.meta.pagination });
         } catch (error: any) {
             console.error('Freepik API error:', error);
+            return Response.json({ error: error.message }, { status: 500 });
+        }
+    };
+}
+
+/**
+ * Creates a Next.js route handler for Freepik icon download.
+ * This proxies the download request through your server to handle CORS and authentication.
+ *
+ * Usage in your app/api/freepik/icons/[id]/download/route.ts:
+ * ```ts
+ * import { createFreepikIconDownloadHandler } from '@reactkits.dev/react-media-library/server';
+ * export const GET = createFreepikIconDownloadHandler();
+ * ```
+ */
+export function createFreepikIconDownloadHandler(options?: { apiKey?: string }) {
+    return async function GET(
+        request: Request,
+        { params }: { params: Promise<{ id: string }> }
+    ) {
+        const apiKey = options?.apiKey || process.env.FREEPIK_API_KEY;
+        if (!apiKey) {
+            return Response.json({ error: 'Freepik API key not configured' }, { status: 500 });
+        }
+
+        const { id: iconId } = await params;
+        if (!iconId) {
+            return Response.json({ error: 'Icon ID is required' }, { status: 400 });
+        }
+
+        const { searchParams } = new URL(request.url);
+        const format = (searchParams.get('format') as DownloadFreepikIconOptions['format']) || 'svg';
+        const pngSize = searchParams.get('png_size') ? Number(searchParams.get('png_size')) : undefined;
+
+        try {
+            // Get the download URL from Freepik API
+            const downloadInfo = await downloadFreepikIcon({
+                apiKey,
+                iconId,
+                format,
+                pngSize,
+            });
+
+            // Fetch the actual file from Freepik's CDN
+            const fileRes = await fetch(downloadInfo.data.url);
+            if (!fileRes.ok) {
+                throw new Error(`Failed to fetch file from Freepik CDN: ${fileRes.status}`);
+            }
+
+            const blob = await fileRes.blob();
+            const contentType = fileRes.headers.get('content-type') || 'application/octet-stream';
+
+            // Return the file with proper headers
+            return new Response(blob, {
+                headers: {
+                    'Content-Type': contentType,
+                    'Content-Disposition': `attachment; filename="${downloadInfo.data.filename}"`,
+                },
+            });
+        } catch (error: any) {
+            console.error('Freepik download error:', error);
             return Response.json({ error: error.message }, { status: 500 });
         }
     };
