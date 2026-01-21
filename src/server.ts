@@ -1,12 +1,46 @@
-// Server-only exports - safe to use in Next.js API routes
-// This file does NOT import any React-dependent modules to avoid "use client" conflicts
-
 /**
- * Freepik API Helper Functions
- *
- * These functions handle all Freepik API communication. Consumer apps use these
- * in their backend routes to proxy requests to Freepik's API.
+ * Server-side exports for media library
+ * 
+ * Provides utilities for server-side file storage and API route handlers.
+ * Safe to use in Next.js API routes (no React dependencies).
  */
+
+// Storage utilities
+export {
+    configureMediaStorage,
+    getUserMediaPath,
+    generateMediaFilename,
+    saveMediaFile,
+    readMediaFile,
+    deleteMediaFile,
+    getMediaFileStats,
+    saveThumbnail,
+} from './server/storage';
+export type { MediaStorageConfig } from './server/storage';
+
+// Next.js App Router route handlers (recommended)
+export {
+    createMediaAssetsRoutes,
+    createMediaAssetByIdRoutes,
+    createMediaThumbnailRoute,
+} from './server/nextjs/routes';
+export type { MediaAssetsRoutesConfig } from './server/nextjs/routes';
+
+// Legacy route handlers (generic, can be used with any framework)
+export {
+    createMediaRoutes,
+    createMediaAssetByIdRoutes as createMediaAssetByIdRoutesLegacy,
+    createThumbnailRoute,
+} from './server/routes';
+export type { MediaRoutesConfig } from './server/routes';
+
+// Sync service (client-side, but can be used in server components)
+export { MediaSyncService } from './services/sync';
+export type { MediaSyncConfig } from './services/sync';
+
+// Freepik API Helper Functions
+// These functions handle all Freepik API communication. Consumer apps use these
+// in their backend routes to proxy requests to Freepik's API.
 
 const FREEPIK_API_BASE = 'https://api.freepik.com/v1';
 

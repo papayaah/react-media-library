@@ -147,12 +147,22 @@ export type MediaFreepikProvider = {
 };
 
 export interface MediaAsset {
-    id?: number;
-    handleName: string;
+    // Local-only fields (for offline support)
+    id?: number; // Local IndexedDB ID (temporary until synced)
+    
+    // Cloud fields (synced) - optional, added for cross-device sync
+    cloudId?: string; // UUID from backend (primary key in cloud)
+    userId?: string; // User who owns this asset
+    
+    // File storage
+    handleName: string; // OPFS filename (local cache - authoritative for UX)
+    cloudUrl?: string; // Server URL/path (if synced to server)
     /** Optional thumbnail stored in OPFS for faster grids/previews */
     thumbnailHandleName?: string;
     thumbnailMimeType?: string;
     thumbnailSize?: number;
+    
+    // Metadata
     fileName: string;
     fileType: MediaType;
     mimeType: string;
@@ -160,8 +170,18 @@ export interface MediaAsset {
     /** For images, store intrinsic dimensions */
     width?: number;
     height?: number;
-    createdAt: number;
-    updatedAt: number;
+    
+    // Timestamps
+    createdAt: number; // Local creation time
+    updatedAt: number; // Last modification time
+    syncedAt?: number; // Last successful sync timestamp
+    cloudCreatedAt?: string; // ISO timestamp from backend
+    
+    // Sync state
+    syncStatus?: 'pending' | 'syncing' | 'synced' | 'error';
+    syncError?: string;
+    
+    // UI
     previewUrl?: string;
 }
 

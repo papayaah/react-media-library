@@ -49,6 +49,19 @@
                 "import": "./dist/server.mjs",
                 "require": "./dist/server.js"
             }
+        },
+        "./server/nextjs/routes": {
+            "types": "./src/server/nextjs/routes.ts",
+            "development": {
+                "types": "./src/server/nextjs/routes.ts",
+                "import": "./src/server/nextjs/routes.ts",
+                "require": "./src/server/nextjs/routes.ts"
+            },
+            "default": {
+                "types": "./dist/server/nextjs/routes.d.ts",
+                "import": "./dist/server/nextjs/routes.mjs",
+                "require": "./dist/server/nextjs/routes.js"
+            }
         }
     },
     "files": [

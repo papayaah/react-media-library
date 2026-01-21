@@ -48,7 +48,7 @@ export type {
     AIGenerateSidebarProps,
 } from './types';
 
-// Services
+// Services (client-side)
 export {
     initDB,
     saveFileToOpfs,
@@ -60,6 +60,10 @@ export {
     getAssetType,
     importFileToLibrary,
 } from './services/storage';
+
+// Sync service (can be used client-side)
+export { MediaSyncService } from './services/sync';
+export type { MediaSyncConfig } from './services/sync';
 
 // Freepik API helpers (for backend routes)
 export {
