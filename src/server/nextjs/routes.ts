@@ -1,13 +1,18 @@
 /**
  * Next.js App Router route handlers for media assets
  * 
+ * **Authentication-agnostic**: This package doesn't depend on any specific auth library.
+ * It only requires a `getUserId` callback that can integrate with any auth system.
+ * 
  * Usage in a Next.js app:
  * - Create: app/api/media/assets/route.ts
  * - Re-export: export const { POST, GET } = createMediaAssetsRoutes(config)
  * 
  * The returned handlers handle:
- * - POST /api/media/assets (upload)
- * - GET  /api/media/assets (list)
+ * - POST /api/media/assets (upload) - requires authentication
+ * - GET  /api/media/assets (list) - requires authentication
+ * 
+ * All routes return 401 Unauthorized if `getUserId` returns null.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -16,8 +21,17 @@ import { saveMediaFile, readMediaFile, deleteMediaFile } from '../storage';
 
 export interface MediaAssetsRoutesConfig {
     /**
-     * Get the current user ID from session
-     * Should return null if not authenticated
+     * Get the current user ID from your authentication system
+     * 
+     * This callback is authentication-agnostic - it can integrate with any auth library:
+     * - BetterAuth: `auth.api.getSession()`
+     * - NextAuth: `getServerSession(authOptions)`
+     * - Clerk: `auth()`
+     * - Custom: Your own auth logic
+     * 
+     * Should return:
+     * - A non-empty string (user ID) if authenticated
+     * - `null` if not authenticated (routes will return 401)
      */
     getUserId: () => Promise<string | null>;
     
@@ -401,4 +415,132 @@ export function createMediaThumbnailRoute(config: MediaAssetsRoutesConfig) {
     }
 
     return { GET };
+}
+
+/**
+ * Create Next.js route handler for /api/media/files/[...path]
+ * 
+ * Simplified version - Download/Delete by path (no database needed)
+ * 
+ * Usage:
+ * ```ts
+ * // app/api/media/files/[...path]/route.ts
+ * import { createMediaFileByPathRoutes } from '@reactkits.dev/react-media-library/server/nextjs/routes';
+ * 
+ * export const { GET, DELETE } = createMediaFileByPathRoutes({
+ *   getUserId: async () => {
+ *     const session = await auth.api.getSession({ headers: await headers() });
+ *     return session?.user?.id || null;
+ *   },
+ * });
+ * ```
+ * 
+ * Security: Verifies the userId in the path matches the current session
+ */
+export function createMediaFileByPathRoutes(config: Pick<MediaAssetsRoutesConfig, 'getUserId' | 'onError'>) {
+    const { getUserId, onError } = config;
+
+    const handleError = (error: any, context: string) => {
+        console.error(`[Media API ${context}] Error:`, error);
+        if (onError) {
+            onError(error instanceof Error ? error : new Error(String(error)), context);
+        }
+    };
+
+    /**
+     * GET /api/media/files/[...path]
+     * Download a file by path
+     */
+    async function GET(
+        request: NextRequest,
+        context: { params: Promise<{ path: string[] }> }
+    ) {
+        try {
+            const userId = await getUserId();
+            if (!userId) {
+                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+            }
+
+            const { path: pathArray } = await context.params;
+            const relativePath = pathArray.join('/');
+
+            // Security: Verify the path starts with the current user's ID
+            if (!relativePath.startsWith(userId + '/')) {
+                return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+            }
+
+            // Read file
+            const fileBuffer = await readMediaFile(relativePath);
+
+            // Extract filename from path
+            const fileName = pathArray[pathArray.length - 1];
+
+            // Determine MIME type from extension
+            const ext = fileName.split('.').pop()?.toLowerCase();
+            const mimeTypes: Record<string, string> = {
+                jpg: 'image/jpeg',
+                jpeg: 'image/jpeg',
+                png: 'image/png',
+                gif: 'image/gif',
+                webp: 'image/webp',
+                mp4: 'video/mp4',
+                pdf: 'application/pdf',
+            };
+            const mimeType = mimeTypes[ext || ''] || 'application/octet-stream';
+
+            return new NextResponse(fileBuffer, {
+                headers: {
+                    'Content-Type': mimeType,
+                    'Content-Disposition': `inline; filename="${fileName}"`,
+                    'Content-Length': fileBuffer.length.toString(),
+                },
+            });
+        } catch (error: any) {
+            if (error.message === 'File not found') {
+                return NextResponse.json({ error: 'File not found' }, { status: 404 });
+            }
+            handleError(error, 'GET by path');
+            return NextResponse.json(
+                { error: 'Failed to download media', details: error?.message },
+                { status: 500 }
+            );
+        }
+    }
+
+    /**
+     * DELETE /api/media/files/[...path]
+     * Delete a file by path
+     */
+    async function DELETE(
+        request: NextRequest,
+        context: { params: Promise<{ path: string[] }> }
+    ) {
+        try {
+            const userId = await getUserId();
+            if (!userId) {
+                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+            }
+
+            const { path: pathArray } = await context.params;
+            const relativePath = pathArray.join('/');
+
+            // Security: Verify the path starts with the current user's ID
+            if (!relativePath.startsWith(userId + '/')) {
+                return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+            }
+
+            // Delete file
+            await deleteMediaFile(relativePath);
+
+            return NextResponse.json({ success: true });
+        } catch (error: any) {
+            handleError(error, 'DELETE by path');
+            return NextResponse.json(
+                { error: 'Failed to delete media', details: error?.message },
+                { status: 500 }
+            );
+        }
+    }
+
+    return { GET, DELETE };
 }

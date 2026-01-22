@@ -1,7 +1,7 @@
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useMediaLibrary } from '../hooks/useMediaLibrary';
 import { useMediaDragDrop } from '../hooks/useMediaDragDrop';
-import { MediaAIGenerateRequest, MediaAsset, MediaAIGenerator, MediaPexelsProvider, MediaFreepikProvider, FreepikContent } from '../types';
+import { MediaAIGenerateRequest, MediaAsset, MediaAIGenerator, MediaPexelsProvider, MediaFreepikProvider, FreepikContent, MediaSyncConfig } from '../types';
 
 interface MediaLibraryContextValue {
     assets: MediaAsset[];
@@ -55,12 +55,17 @@ export const useMediaLibraryContext = () => {
     return context;
 };
 
-interface MediaLibraryProviderProps {
+export interface MediaLibraryProviderProps {
     children: ReactNode;
     enableDragDrop?: boolean;
     ai?: MediaAIGenerator;
     pexels?: MediaPexelsProvider;
     freepik?: MediaFreepikProvider;
+    /**
+     * Optional sync configuration for server-side media storage.
+     * When provided, media will be automatically synced to server when user is authenticated.
+     */
+    sync?: MediaSyncConfig;
 }
 
 export const MediaLibraryProvider: React.FC<MediaLibraryProviderProps> = ({
@@ -69,8 +74,9 @@ export const MediaLibraryProvider: React.FC<MediaLibraryProviderProps> = ({
     ai,
     pexels,
     freepik,
+    sync,
 }) => {
-    const mediaLibrary = useMediaLibrary({ ai, pexels, freepik });
+    const mediaLibrary = useMediaLibrary({ ai, pexels, freepik, sync });
     const { isDragging, draggedItemCount } = useMediaDragDrop(
         mediaLibrary.uploadFiles,
         !enableDragDrop || mediaLibrary.uploading

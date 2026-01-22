@@ -23,6 +23,7 @@ export {
     createMediaAssetsRoutes,
     createMediaAssetByIdRoutes,
     createMediaThumbnailRoute,
+    createMediaFileByPathRoutes,
 } from './server/nextjs/routes';
 export type { MediaAssetsRoutesConfig } from './server/nextjs/routes';
 

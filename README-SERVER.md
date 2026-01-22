@@ -2,6 +2,14 @@
 
 The media library package provides server-side utilities for file storage and API route handlers.
 
+## Authentication
+
+**This package is authentication-agnostic** - it doesn't depend on any specific authentication library. It only requires a `getUserId` callback function that returns the current user's ID (or `null` if not authenticated).
+
+- All server-side file operations **require authentication** - files can only be saved/accessed by authenticated users
+- The `getUserId` callback can integrate with any auth system (BetterAuth, NextAuth, Clerk, custom, etc.)
+- The package validates that `userId` is provided before saving any files to the filesystem
+
 ## Installation
 
 The server utilities are available via the `/server` export:
@@ -28,11 +36,17 @@ configureMediaStorage({
 
 ### Save Files
 
+**Note:** `userId` is required and must be a non-empty string. The function will throw an error if the user is not authenticated.
+
 ```ts
 import { saveMediaFile } from '@reactkits.dev/react-media-library/server';
 
+// userId must be provided - typically from your auth system
 const relativePath = await saveMediaFile(userId, file, 'image.jpg');
 // Returns: "user-id-123/1234567890-image.jpg"
+
+// This will throw an error:
+// await saveMediaFile('', file, 'image.jpg'); // Error: User ID is required
 ```
 
 ### Read Files
@@ -47,15 +61,18 @@ const buffer = await readMediaFile('user-id-123/1234567890-image.jpg');
 
 ### Create Routes
 
+The `getUserId` callback can integrate with **any authentication system**. Here are examples:
+
+**With BetterAuth:**
 ```ts
 // app/api/media/assets/route.ts
 import { headers } from 'next/headers';
-import { auth } from '@/lib/auth';
+import { auth } from '@/lib/auth'; // BetterAuth
 import { db } from '@/db';
 import { mediaAssets } from '@/db/schema';
-import { createMediaRoutes } from '@reactkits.dev/react-media-library/server/routes';
+import { createMediaAssetsRoutes } from '@reactkits.dev/react-media-library/server/nextjs/routes';
 
-export const { POST, GET } = createMediaRoutes({
+export const { POST, GET } = createMediaAssetsRoutes({
   getUserId: async () => {
     const session = await auth.api.getSession({ headers: await headers() });
     return session?.user?.id || null;
@@ -64,6 +81,39 @@ export const { POST, GET } = createMediaRoutes({
   mediaAssetsTable: mediaAssets,
 });
 ```
+
+**With NextAuth:**
+```ts
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+
+export const { POST, GET } = createMediaAssetsRoutes({
+  getUserId: async () => {
+    const session = await getServerSession(authOptions);
+    return session?.user?.id || null;
+  },
+  db,
+  mediaAssetsTable: mediaAssets,
+});
+```
+
+**With Custom Auth:**
+```ts
+export const { POST, GET } = createMediaAssetsRoutes({
+  getUserId: async () => {
+    // Your custom auth logic here
+    const token = await getTokenFromRequest();
+    const user = await verifyToken(token);
+    return user?.id || null;
+  },
+  db,
+  mediaAssetsTable: mediaAssets,
+});
+```
+
+**Important:** The `getUserId` function should return:
+- A non-empty string if the user is authenticated
+- `null` if the user is not authenticated (routes will return 401 Unauthorized)
 
 ### Asset by ID Routes
 

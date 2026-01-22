@@ -4,20 +4,26 @@
  * These are template functions that can be used to create API routes.
  * They handle authentication, file uploads, and database operations.
  * 
+ * **Authentication-agnostic**: This package doesn't depend on any specific auth library.
+ * It only requires a `getUserId` callback that can integrate with any auth system.
+ * 
  * Usage:
  * ```ts
  * // app/api/media/assets/route.ts
  * import { createMediaRoutes } from '@reactkits.dev/react-media-library/server/routes';
  * 
  * export const { POST, GET } = createMediaRoutes({
- *   getSession: async () => {
+ *   getUserId: async () => {
+ *     // Integrate with your auth system (BetterAuth, NextAuth, Clerk, custom, etc.)
  *     const session = await auth.api.getSession({ headers: await headers() });
- *     return session?.user?.id || null;
+ *     return session?.user?.id || null; // Return null if not authenticated
  *   },
  *   db: yourDbInstance,
  *   mediaAssetsTable: yourMediaAssetsTable,
  * });
  * ```
+ * 
+ * All routes require authentication - they will return 401 Unauthorized if `getUserId` returns null.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -26,8 +32,17 @@ import type { MediaAsset } from '../types';
 
 export interface MediaRoutesConfig {
     /**
-     * Get the current user ID from session
-     * Should return null if not authenticated
+     * Get the current user ID from your authentication system
+     * 
+     * This callback is authentication-agnostic - it can integrate with any auth library:
+     * - BetterAuth: `auth.api.getSession()`
+     * - NextAuth: `getServerSession(authOptions)`
+     * - Clerk: `auth()`
+     * - Custom: Your own auth logic
+     * 
+     * Should return:
+     * - A non-empty string (user ID) if authenticated
+     * - `null` if not authenticated (routes will return 401)
      */
     getUserId: () => Promise<string | null>;
     

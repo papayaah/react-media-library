@@ -59,12 +59,27 @@ export function generateMediaFilename(
 /**
  * Save a file to local storage
  * Returns the relative path (from MEDIA_STORAGE_PATH)
+ * 
+ * @param userId - Required: User ID for authentication. Must be a non-empty string.
+ * @param file - File or Buffer to save
+ * @param originalFileName - Original filename
+ * @throws Error if userId is missing or invalid
  */
 export async function saveMediaFile(
     userId: string,
     file: File | Buffer,
     originalFileName: string
 ): Promise<string> {
+    // Validate userId - required for authentication
+    if (!userId || typeof userId !== 'string' || userId.trim().length === 0) {
+        throw new Error('User ID is required to save files. User must be authenticated.');
+    }
+    
+    // Security: prevent path traversal
+    if (userId.includes('..') || userId.includes('/') || userId.includes('\\')) {
+        throw new Error('Invalid user ID format');
+    }
+    
     const userPath = getUserMediaPath(userId);
     await mkdir(userPath, { recursive: true });
 
@@ -139,12 +154,27 @@ export async function getMediaFileStats(relativePath: string) {
 
 /**
  * Save a thumbnail file
+ * 
+ * @param userId - Required: User ID for authentication. Must be a non-empty string.
+ * @param thumbnail - Thumbnail buffer to save
+ * @param originalFileName - Original filename
+ * @throws Error if userId is missing or invalid
  */
 export async function saveThumbnail(
     userId: string,
     thumbnail: Buffer,
     originalFileName: string
 ): Promise<string> {
+    // Validate userId - required for authentication
+    if (!userId || typeof userId !== 'string' || userId.trim().length === 0) {
+        throw new Error('User ID is required to save files. User must be authenticated.');
+    }
+    
+    // Security: prevent path traversal
+    if (userId.includes('..') || userId.includes('/') || userId.includes('\\')) {
+        throw new Error('Invalid user ID format');
+    }
+    
     const userPath = getUserMediaPath(userId);
     await mkdir(userPath, { recursive: true });
 

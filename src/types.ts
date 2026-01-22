@@ -226,6 +226,44 @@ export interface MediaLibraryConfig {
     opfsDirectory?: string;
 }
 
+/**
+ * Configuration for server-side media sync.
+ * When provided, media will be automatically synced to server when user is authenticated.
+ */
+export interface MediaSyncConfig {
+    /**
+     * Base URL for the API (e.g., '/api' or 'https://example.com/api')
+     */
+    apiBaseUrl: string;
+
+    /**
+     * Get the current user ID from your authentication system.
+     * Should return a non-empty string if authenticated, or null if not authenticated.
+     * When null, sync operations will be skipped (offline-first behavior).
+     */
+    getUserId: () => Promise<string | null>;
+
+    /**
+     * Enable automatic background sync (default: true)
+     */
+    autoSync?: boolean;
+
+    /**
+     * Interval for background sync in milliseconds (default: 30000 = 30 seconds)
+     */
+    syncInterval?: number;
+
+    /**
+     * Called when sync status changes
+     */
+    onSyncStatusChange?: (status: 'idle' | 'syncing' | 'synced' | 'error') => void;
+
+    /**
+     * Called when sync error occurs
+     */
+    onSyncError?: (error: Error) => void;
+}
+
 // Component Preset Types
 export interface CardProps {
     children: ReactNode;

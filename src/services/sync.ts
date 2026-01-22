@@ -4,18 +4,27 @@
  * Handles background sync of media assets from OPFS/IndexedDB to server.
  * Follows offline-first architecture: OPFS is authoritative, server is a mirror.
  * 
+ * **Authentication-agnostic**: This service doesn't depend on any specific auth library.
+ * It only requires a `getUserId` callback that can integrate with any auth system.
+ * 
  * Based on specs/offline-first-persistence.md
  * 
  * Usage:
  * ```ts
- * import { MediaSyncService } from '@reactkits.dev/react-media-library/server';
+ * import { MediaSyncService } from '@reactkits.dev/react-media-library/services';
  * 
  * const syncService = new MediaSyncService({
  *   apiBaseUrl: '/api',
- *   getUserId: async () => session?.user?.id || null,
+ *   getUserId: async () => {
+ *     // Integrate with your auth system (BetterAuth, NextAuth, Clerk, custom, etc.)
+ *     const session = await getSession();
+ *     return session?.user?.id || null;
+ *   },
  *   autoSync: true,
  * });
  * ```
+ * 
+ * All sync operations require authentication - they will throw an error if `getUserId` returns null.
  */
 
 import { MediaAsset } from '../types';
@@ -23,6 +32,13 @@ import { getFileFromOpfs } from './storage';
 
 export interface MediaSyncConfig {
     apiBaseUrl: string;
+    /**
+     * Get the current user ID from your authentication system
+     * 
+     * This callback is authentication-agnostic - it can integrate with any auth library.
+     * Should return a non-empty string if authenticated, or null if not authenticated.
+     * All sync operations will fail if this returns null.
+     */
     getUserId: () => Promise<string | null>;
     autoSync?: boolean;
     syncInterval?: number; // milliseconds
@@ -127,6 +143,7 @@ export class MediaSyncService {
                 cloudId: serverAsset.id,
                 userId: serverAsset.userId,
                 cloudUrl: serverAsset.path,
+                handleName: '', // Will be set when file is downloaded to OPFS
                 fileName: serverAsset.fileName,
                 fileType: serverAsset.fileType as MediaAsset['fileType'],
                 mimeType: serverAsset.mimeType,
@@ -138,7 +155,6 @@ export class MediaSyncService {
                 cloudCreatedAt: serverAsset.createdAt,
                 createdAt: new Date(serverAsset.createdAt).getTime(),
                 updatedAt: new Date(serverAsset.updatedAt).getTime(),
-                // Note: handleName will be set when file is downloaded to OPFS
             };
         } catch (error) {
             console.error('[MediaSync] Failed to fetch metadata:', error);

@@ -192,6 +192,21 @@ export const deleteAssetFromDB = async (id: number) => {
     return db.delete('assets', id);
 };
 
+export const updateAssetInDB = async (id: number, updates: Partial<MediaAsset>) => {
+    const db = await initDB();
+    const existing = await db.get('assets', id);
+    if (!existing) return;
+
+    const updated = { ...existing, ...updates, updatedAt: Date.now() };
+    await db.put('assets', updated);
+    return updated;
+};
+
+export const getAssetFromDB = async (id: number): Promise<MediaAsset | undefined> => {
+    const db = await initDB();
+    return db.get('assets', id);
+};
+
 export const importFileToLibrary = async (
     file: File,
     options?: {
