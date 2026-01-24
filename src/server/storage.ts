@@ -10,8 +10,8 @@
  * ```
  */
 
-import { mkdir, writeFile, readFile, unlink, stat } from 'fs/promises';
-import { join, dirname } from 'path';
+import { mkdir, writeFile, readFile, unlink, stat, readdir } from 'fs/promises';
+import { join } from 'path';
 import { existsSync } from 'fs';
 
 const DEFAULT_MEDIA_STORAGE_PATH = '/srv/appframes/media';
@@ -186,4 +186,122 @@ export async function saveThumbnail(
 
     await writeFile(filePath, thumbnail);
     return relativePath;
+}
+
+/**
+ * List all files for a user (used when no database is configured)
+ *
+ * @param userId - User ID to list files for
+ * @returns Array of file metadata derived from filesystem
+ */
+export async function listUserFiles(userId: string): Promise<
+    Array<{
+        id: string;
+        fileName: string;
+        fileType: string;
+        mimeType: string;
+        size: number;
+        path: string;
+        thumbnailPath?: string;
+        createdAt: string;
+        updatedAt: string;
+    }>
+> {
+    // Validate userId
+    if (!userId || typeof userId !== 'string' || userId.trim().length === 0) {
+        throw new Error('User ID is required');
+    }
+
+    // Security: prevent path traversal
+    if (userId.includes('..') || userId.includes('/') || userId.includes('\\')) {
+        throw new Error('Invalid user ID format');
+    }
+
+    const userPath = getUserMediaPath(userId);
+
+    // Return empty array if directory doesn't exist
+    if (!existsSync(userPath)) {
+        return [];
+    }
+
+    const files = await readdir(userPath);
+
+    // Filter out thumbnails and build file list
+    const mediaFiles = files.filter((f) => !f.startsWith('thumb-'));
+    const thumbnails = new Set(files.filter((f) => f.startsWith('thumb-')));
+
+    const results = await Promise.all(
+        mediaFiles.map(async (fileName) => {
+            const relativePath = `${userId}/${fileName}`;
+            const fullPath = join(userPath, fileName);
+
+            try {
+                const stats = await stat(fullPath);
+
+                // Extract original filename from stored name (timestamp-name.ext)
+                const parts = fileName.split('-');
+                const timestamp = parseInt(parts[0], 10) || Date.now();
+                const originalName = parts.slice(1).join('-') || fileName;
+
+                // Determine MIME type from extension
+                const ext = fileName.split('.').pop()?.toLowerCase() || '';
+                const mimeTypes: Record<string, string> = {
+                    jpg: 'image/jpeg',
+                    jpeg: 'image/jpeg',
+                    png: 'image/png',
+                    gif: 'image/gif',
+                    webp: 'image/webp',
+                    svg: 'image/svg+xml',
+                    mp4: 'video/mp4',
+                    webm: 'video/webm',
+                    mp3: 'audio/mpeg',
+                    wav: 'audio/wav',
+                    pdf: 'application/pdf',
+                };
+                const mimeType = mimeTypes[ext] || 'application/octet-stream';
+
+                // Determine file type
+                const fileType = mimeType.startsWith('image/')
+                    ? 'image'
+                    : mimeType.startsWith('video/')
+                      ? 'video'
+                      : mimeType.startsWith('audio/')
+                        ? 'audio'
+                        : mimeType.includes('pdf')
+                          ? 'document'
+                          : 'other';
+
+                // Find matching thumbnail
+                const thumbPattern = `thumb-${timestamp}-`;
+                const thumbnailFile = Array.from(thumbnails).find((t) =>
+                    t.startsWith(thumbPattern)
+                );
+
+                return {
+                    id: relativePath, // Use path as ID
+                    fileName: originalName,
+                    fileType,
+                    mimeType,
+                    size: stats.size,
+                    path: relativePath,
+                    thumbnailPath: thumbnailFile
+                        ? `${userId}/${thumbnailFile}`
+                        : undefined,
+                    createdAt: new Date(timestamp).toISOString(),
+                    updatedAt: stats.mtime.toISOString(),
+                };
+            } catch {
+                // Skip files that can't be read
+                return null;
+            }
+        })
+    );
+
+    // Filter nulls and sort by creation date (newest first)
+    return results
+        .filter((r): r is NonNullable<typeof r> => r !== null)
+        .sort(
+            (a, b) =>
+                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
 }

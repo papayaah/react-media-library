@@ -84,13 +84,17 @@
         "cropperjs": "^2.1.0",
         "lucide-react": ">=0.300.0",
         "react": "^19.0.0",
-        "react-dom": "^19.0.0"
+        "react-dom": "^19.0.0",
+        "sharp": ">=0.34.0"
     },
     "peerDependenciesMeta": {
         "cropperjs": {
             "optional": true
         },
         "lucide-react": {
+            "optional": true
+        },
+        "sharp": {
             "optional": true
         }
     },

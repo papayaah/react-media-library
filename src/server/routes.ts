@@ -248,7 +248,7 @@ export function createMediaAssetByIdRoutes(config: MediaRoutesConfig) {
             const fileBuffer = await readMediaFile(asset.path);
 
             // Return file with appropriate headers
-            return new NextResponse(fileBuffer, {
+            return new NextResponse(new Uint8Array(fileBuffer), {
                 headers: {
                     'Content-Type': asset.mimeType,
                     'Content-Disposition': `inline; filename="${asset.fileName}"`,
@@ -376,7 +376,7 @@ export function createThumbnailRoute(config: MediaRoutesConfig) {
             const path = asset.thumbnailPath || asset.path;
             const fileBuffer = await readMediaFile(path);
 
-            return new NextResponse(fileBuffer, {
+            return new NextResponse(new Uint8Array(fileBuffer), {
                 headers: {
                     'Content-Type': asset.thumbnailPath ? 'image/jpeg' : asset.mimeType,
                     'Content-Disposition': `inline; filename="thumb-${asset.fileName}"`,

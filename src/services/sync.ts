@@ -232,15 +232,24 @@ export class MediaSyncService {
     /**
      * Pull cloud assets on login
      * Merges with local assets (dedupe by cloudId)
+     * Also removes local assets that were deleted on server (sync deletions)
+     *
+     * @param getLocalAssets - Get all local assets from IndexedDB
+     * @param addAsset - Add a new asset to IndexedDB
+     * @param removeAsset - Remove an asset from IndexedDB and OPFS (optional, enables sync deletions)
      */
     async pullCloudAssets(
         getLocalAssets: () => Promise<MediaAsset[]>,
-        addAsset: (asset: MediaAsset) => Promise<void>
-    ): Promise<void> {
+        addAsset: (asset: MediaAsset) => Promise<void>,
+        removeAsset?: (asset: MediaAsset) => Promise<void>
+    ): Promise<{ added: number; removed: number }> {
         const userId = await this.config.getUserId();
         if (!userId) {
-            return;
+            return { added: 0, removed: 0 };
         }
+
+        let added = 0;
+        let removed = 0;
 
         try {
             // Fetch all assets from server
@@ -251,6 +260,9 @@ export class MediaSyncService {
 
             const serverAssets = await response.json();
             const localAssets = await getLocalAssets();
+
+            // Create lookup sets for efficient comparison
+            const serverCloudIds = new Set(serverAssets.map((a: any) => a.id));
             const localCloudIds = new Set(
                 localAssets
                     .filter((a) => a.cloudId)
@@ -279,11 +291,27 @@ export class MediaSyncService {
                         handleName: '', // Will be set when downloaded
                     };
                     await addAsset(asset);
+                    added++;
+                }
+            }
+
+            // Sync deletions: Remove local assets that were deleted on server
+            // Only applies to assets that have a cloudId (were previously synced)
+            if (removeAsset) {
+                for (const localAsset of localAssets) {
+                    // If asset has cloudId but is not on server, it was deleted elsewhere
+                    if (localAsset.cloudId && !serverCloudIds.has(localAsset.cloudId)) {
+                        console.log('[MediaSync] Removing locally deleted asset:', localAsset.cloudId, localAsset.fileName);
+                        await removeAsset(localAsset);
+                        removed++;
+                    }
                 }
             }
         } catch (error) {
             console.error('[MediaSync] Failed to pull cloud assets:', error);
         }
+
+        return { added, removed };
     }
 
     /**

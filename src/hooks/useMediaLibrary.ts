@@ -115,7 +115,7 @@ export const useMediaLibrary = (options?: {
         }
     }, [options?.sync, setAssetsTracked]);
 
-    // Pull cloud assets on login (merge with local, download files to OPFS)
+    // Pull cloud assets on login (merge with local, download files to OPFS, sync deletions)
     const pullCloudAssets = useCallback(async () => {
         const syncService = syncServiceRef.current;
         if (!syncService || !options?.sync || hasPulledCloudAssets.current) return;
@@ -126,7 +126,7 @@ export const useMediaLibrary = (options?: {
 
             hasPulledCloudAssets.current = true;
 
-            await syncService.pullCloudAssets(
+            const result = await syncService.pullCloudAssets(
                 // Get local assets
                 async () => listAssetsFromDB(),
                 // Add cloud asset to local DB (download file to OPFS)
@@ -162,8 +162,34 @@ export const useMediaLibrary = (options?: {
                     } catch (err) {
                         console.error('[MediaLibrary] Failed to add cloud asset locally:', err);
                     }
+                },
+                // Remove local asset that was deleted on server (sync deletions)
+                async (deletedAsset: MediaAsset) => {
+                    try {
+                        // Delete from local storage (IndexedDB + OPFS)
+                        if (deletedAsset.id) {
+                            await deleteAssetFromDB(deletedAsset.id);
+                        }
+                        await deleteFileFromOpfs(deletedAsset.handleName);
+                        if (deletedAsset.thumbnailHandleName) {
+                            await deleteFileFromOpfs(deletedAsset.thumbnailHandleName);
+                        }
+                        if (deletedAsset.previewUrl) {
+                            URL.revokeObjectURL(deletedAsset.previewUrl);
+                        }
+
+                        // Remove from in-memory state
+                        setAssetsTracked((prev) => prev.filter((a) => a.id !== deletedAsset.id));
+                        console.log('[MediaLibrary] Removed locally deleted asset:', deletedAsset.cloudId, deletedAsset.fileName);
+                    } catch (err) {
+                        console.error('[MediaLibrary] Failed to remove deleted asset:', err);
+                    }
                 }
             );
+
+            if (result.added > 0 || result.removed > 0) {
+                console.log(`[MediaLibrary] Sync complete: ${result.added} added, ${result.removed} removed`);
+            }
         } catch (err) {
             console.error('[MediaLibrary] Pull cloud assets error:', err);
         }
@@ -302,6 +328,7 @@ export const useMediaLibrary = (options?: {
     const deleteAsset = useCallback(async (asset: MediaAsset) => {
         if (!asset.id) return;
         try {
+            // Delete from local storage (IndexedDB + OPFS)
             await deleteAssetFromDB(asset.id);
             await deleteFileFromOpfs(asset.handleName);
             if (asset.thumbnailHandleName) {
@@ -311,6 +338,17 @@ export const useMediaLibrary = (options?: {
                 URL.revokeObjectURL(asset.previewUrl);
             }
             setAssetsTracked((prev) => prev.filter((a) => a.id !== asset.id));
+
+            // If user is logged in and asset is synced to server, delete from server too
+            const syncService = syncServiceRef.current;
+            if (syncService && asset.cloudId) {
+                try {
+                    await syncService.deleteAsset(asset.cloudId);
+                } catch (serverErr) {
+                    // Log but don't fail - local deletion succeeded
+                    console.error('[MediaLibrary] Failed to delete from server:', serverErr);
+                }
+            }
         } catch (err) {
             setError('Failed to delete asset.');
         }

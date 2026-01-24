@@ -15,8 +15,22 @@ export {
     deleteMediaFile,
     getMediaFileStats,
     saveThumbnail,
+    listUserFiles,
 } from './server/storage';
 export type { MediaStorageConfig } from './server/storage';
+
+// Image processing utilities (optional - requires sharp)
+export {
+    processImage,
+    isSharpAvailable,
+    isSupportedImageType,
+} from './server/image-processing';
+export type {
+    ImageMetadata,
+    ThumbnailResult,
+    ProcessImageResult,
+    ProcessImageOptions,
+} from './server/image-processing';
 
 // Next.js App Router route handlers (recommended)
 export {
