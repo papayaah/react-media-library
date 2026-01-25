@@ -11,7 +11,7 @@
  */
 
 import { mkdir, writeFile, readFile, unlink, stat, readdir } from 'fs/promises';
-import { join } from 'path';
+import { join, resolve } from 'path';
 import { existsSync } from 'fs';
 
 const DEFAULT_MEDIA_STORAGE_PATH = '/srv/appframes/media';
@@ -38,7 +38,7 @@ export function configureMediaStorage(newConfig: MediaStorageConfig): void {
  * Get the storage path for a user's media files
  */
 export function getUserMediaPath(userId: string): string {
-    return join(config.storagePath!, userId);
+    return resolve(config.storagePath!, userId);
 }
 
 /**
@@ -105,11 +105,11 @@ export async function saveMediaFile(
  * Read a media file from storage
  */
 export async function readMediaFile(relativePath: string): Promise<Buffer> {
-    const fullPath = join(config.storagePath!, relativePath);
-    
+    const baseDir = resolve(config.storagePath!);
+    const fullPath = resolve(baseDir, relativePath);
+
     // Security: ensure path is within MEDIA_STORAGE_PATH
-    const resolvedPath = join(config.storagePath!, relativePath);
-    if (!resolvedPath.startsWith(config.storagePath!)) {
+    if (!fullPath.startsWith(baseDir)) {
         throw new Error('Invalid file path');
     }
 
@@ -124,11 +124,11 @@ export async function readMediaFile(relativePath: string): Promise<Buffer> {
  * Delete a media file from storage
  */
 export async function deleteMediaFile(relativePath: string): Promise<void> {
-    const fullPath = join(config.storagePath!, relativePath);
-    
+    const baseDir = resolve(config.storagePath!);
+    const fullPath = resolve(baseDir, relativePath);
+
     // Security: ensure path is within MEDIA_STORAGE_PATH
-    const resolvedPath = join(config.storagePath!, relativePath);
-    if (!resolvedPath.startsWith(config.storagePath!)) {
+    if (!fullPath.startsWith(baseDir)) {
         throw new Error('Invalid file path');
     }
 
@@ -141,11 +141,11 @@ export async function deleteMediaFile(relativePath: string): Promise<void> {
  * Get file stats (size, etc.)
  */
 export async function getMediaFileStats(relativePath: string) {
-    const fullPath = join(config.storagePath!, relativePath);
-    
+    const baseDir = resolve(config.storagePath!);
+    const fullPath = resolve(baseDir, relativePath);
+
     // Security: ensure path is within MEDIA_STORAGE_PATH
-    const resolvedPath = join(config.storagePath!, relativePath);
-    if (!resolvedPath.startsWith(config.storagePath!)) {
+    if (!fullPath.startsWith(baseDir)) {
         throw new Error('Invalid file path');
     }
 

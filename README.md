@@ -41,6 +41,9 @@ npm install @reactkits.dev/react-media-library
 
 # Optional: icons
 npm install lucide-react
+
+# Optional: server-side image processing (thumbnails, resizing)
+npm install sharp
 ```
 
 ## Quick Start
