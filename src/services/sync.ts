@@ -269,30 +269,46 @@ export class MediaSyncService {
                     .map((a) => a.cloudId!)
             );
 
+            // Create a set of local assets by filename+size for duplicate detection
+            // This prevents adding the same file twice if it was uploaded locally and also exists on server
+            const localFileFingerprints = new Set(
+                localAssets.map((a) => `${a.fileName}:${a.size}`)
+            );
+
             // Add assets that don't exist locally
             for (const serverAsset of serverAssets) {
-                if (!localCloudIds.has(serverAsset.id)) {
-                    // Convert server format to MediaAsset
-                    const asset: MediaAsset = {
-                        cloudId: serverAsset.id,
-                        userId: serverAsset.userId,
-                        cloudUrl: serverAsset.path,
-                        fileName: serverAsset.fileName,
-                        fileType: serverAsset.fileType,
-                        mimeType: serverAsset.mimeType,
-                        size: serverAsset.size,
-                        width: serverAsset.width,
-                        height: serverAsset.height,
-                        syncStatus: 'synced',
-                        syncedAt: Date.now(),
-                        cloudCreatedAt: serverAsset.createdAt,
-                        createdAt: new Date(serverAsset.createdAt).getTime(),
-                        updatedAt: new Date(serverAsset.updatedAt).getTime(),
-                        handleName: '', // Will be set when downloaded
-                    };
-                    await addAsset(asset);
-                    added++;
+                // Skip if already exists by cloudId
+                if (localCloudIds.has(serverAsset.id)) {
+                    continue;
                 }
+
+                // Check for duplicate by filename and size (prevent re-adding same file)
+                const fileFingerprint = `${serverAsset.fileName}:${serverAsset.size}`;
+                if (localFileFingerprints.has(fileFingerprint)) {
+                    console.log('[MediaSync] Skipping duplicate asset (same filename and size):', serverAsset.fileName);
+                    continue;
+                }
+
+                // Convert server format to MediaAsset
+                const asset: MediaAsset = {
+                    cloudId: serverAsset.id,
+                    userId: serverAsset.userId,
+                    cloudUrl: serverAsset.path,
+                    fileName: serverAsset.fileName,
+                    fileType: serverAsset.fileType,
+                    mimeType: serverAsset.mimeType,
+                    size: serverAsset.size,
+                    width: serverAsset.width,
+                    height: serverAsset.height,
+                    syncStatus: 'synced',
+                    syncedAt: Date.now(),
+                    cloudCreatedAt: serverAsset.createdAt,
+                    createdAt: new Date(serverAsset.createdAt).getTime(),
+                    updatedAt: new Date(serverAsset.updatedAt).getTime(),
+                    handleName: '', // Will be set when downloaded
+                };
+                await addAsset(asset);
+                added++;
             }
 
             // Sync deletions: Remove local assets that were deleted on server
