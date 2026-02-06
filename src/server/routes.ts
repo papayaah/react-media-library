@@ -28,7 +28,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { saveMediaFile, readMediaFile, deleteMediaFile } from './storage';
-import type { MediaAsset } from '../types';
 
 export interface MediaRoutesConfig {
     /**
