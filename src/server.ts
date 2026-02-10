@@ -13,6 +13,7 @@ export {
     saveMediaFile,
     readMediaFile,
     deleteMediaFile,
+    deleteUserMediaDirectory,
     getMediaFileStats,
     saveThumbnail,
     listUserFiles,

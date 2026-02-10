@@ -9,6 +9,7 @@ export { MediaGrid } from './components/MediaGrid';
 export type { MediaGridProps } from './components/MediaGrid';
 export { RecentMediaGrid } from './components/RecentMediaGrid';
 export type { RecentMediaGridProps } from './components/RecentMediaGrid';
+export { QuickMediaPicker } from './components/QuickMediaPicker';
 
 // Presets
 export { tailwindPreset, lucideIcons } from './presets';
@@ -46,6 +47,7 @@ export type {
     FileButtonProps,
     GridProps,
     AIGenerateSidebarProps,
+    QuickMediaPickerProps,
 } from './types';
 
 // Services (client-side)
@@ -59,6 +61,7 @@ export {
     deleteAssetFromDB,
     getAssetType,
     importFileToLibrary,
+    clearAllMediaData,
 } from './services/storage';
 
 // Sync service (can be used client-side)

@@ -23,6 +23,7 @@ import {
     ZoomOut,
     Undo,
     Hand,
+    Cloud,
 } from 'lucide-react';
 
 /**
@@ -62,4 +63,5 @@ export const lucideIcons: MediaGridIcons = {
     zoomOut: ZoomOut,
     undo: Undo,
     hand: Hand,
+    cloud: Cloud,
 };

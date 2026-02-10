@@ -276,3 +276,27 @@ export const getAssetType = (mimeType: string): MediaType => {
     if (mimeType.startsWith('text/') || mimeType.includes('pdf')) return 'document';
     return 'other';
 };
+
+/**
+ * Clear all media library data (IndexedDB and OPFS)
+ * Used for account deletion
+ */
+export const clearAllMediaData = async (
+    directory: string = DEFAULT_OPFS_DIR
+): Promise<void> => {
+    // 1. Clear IndexedDB
+    const db = await initDB();
+    await db.clear('assets');
+
+    // 2. Clear OPFS directory
+    try {
+        const root = await navigator.storage.getDirectory();
+        // Remove the entire directory and recreate it empty
+        await root.removeEntry(directory, { recursive: true });
+    } catch (error) {
+        // Directory may not exist, which is fine
+        console.log('[MediaLibrary] OPFS directory clear:', error);
+    }
+
+    console.log('[MediaLibrary] All media data cleared');
+};

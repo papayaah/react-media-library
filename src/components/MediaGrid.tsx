@@ -52,6 +52,9 @@ interface GridAssetItemProps {
     onDeleteAsset: (asset: MediaAsset) => void;
     renderTypeIcon: (icon: any, size: number) => React.ReactNode;
     iconMap: any;
+    // Delete confirmation (double-tap pattern)
+    isDeleteConfirm: boolean;
+    onDeleteConfirmChange: (assetId: number | null) => void;
     // Drag & drop props
     draggable?: boolean;
     isDragging?: boolean;
@@ -69,6 +72,8 @@ const GridAssetItem: React.FC<GridAssetItemProps> = ({
     onDeleteAsset,
     renderTypeIcon,
     iconMap,
+    isDeleteConfirm,
+    onDeleteConfirmChange,
     draggable,
     isDragging,
     onDragStart,
@@ -257,18 +262,42 @@ const GridAssetItem: React.FC<GridAssetItemProps> = ({
 
                 {!isSelectMode && (
                     <div onClick={(e) => e.stopPropagation()}>
-                        <Button
-                            variant="danger"
-                            size="sm"
-                            fullWidth
-                            onClick={() => {
-                                if (confirm('Delete this file?')) {
-                                    onDeleteAsset(asset);
-                                }
-                            }}
-                        >
-                            Delete
-                        </Button>
+                        {isDeleteConfirm ? (
+                            <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                <div style={{ flex: 1 }}>
+                                    <Button
+                                        variant="danger"
+                                        size="sm"
+                                        fullWidth
+                                        onClick={() => {
+                                            onDeleteAsset(asset);
+                                            onDeleteConfirmChange(null);
+                                        }}
+                                    >
+                                        Confirm
+                                    </Button>
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        fullWidth
+                                        onClick={() => onDeleteConfirmChange(null)}
+                                    >
+                                        Cancel
+                                    </Button>
+                                </div>
+                            </div>
+                        ) : (
+                            <Button
+                                variant="danger"
+                                size="sm"
+                                fullWidth
+                                onClick={() => onDeleteConfirmChange(asset.id!)}
+                            >
+                                Delete
+                            </Button>
+                        )}
                     </div>
                 )}
             </div>
@@ -354,6 +383,10 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
     const [isSelectMode, setIsSelectMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
+    // Delete confirmation (double-tap pattern)
+    const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+    const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+
     // Image viewer
     const [viewingAsset, setViewingAsset] = useState<MediaAsset | null>(null);
 
@@ -420,12 +453,22 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
 
     const handleBulkDelete = async () => {
         if (selectedIds.size === 0) return;
-        if (!confirm(`Delete ${selectedIds.size} item(s)?`)) return;
+
+        // First click shows confirmation, second click deletes
+        if (!bulkDeleteConfirm) {
+            setBulkDeleteConfirm(true);
+            return;
+        }
 
         const assetsToDelete = assets.filter((a) => selectedIds.has(a.id!));
         await Promise.all(assetsToDelete.map((a) => deleteAsset(a)));
         setSelectedIds(new Set());
         setIsSelectMode(false);
+        setBulkDeleteConfirm(false);
+    };
+
+    const cancelBulkDelete = () => {
+        setBulkDeleteConfirm(false);
     };
 
     const handleAssetClick = (asset: MediaAsset) => {
@@ -484,6 +527,7 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                         onClick={() => {
                             setIsSelectMode(!isSelectMode);
                             setSelectedIds(new Set());
+                            setBulkDeleteConfirm(false);
                         }}
                     >
                         {isSelectMode ? 'Cancel' : 'Select'}
@@ -754,14 +798,25 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                                             Select All
                                         </Button>
                                     )}
-                                    {selectedIds.size === filteredAssets.length && (
+                                    {selectedIds.size === filteredAssets.length && !bulkDeleteConfirm && (
                                         <Button variant="secondary" size="sm" onClick={handleDeselectAll}>
                                             Deselect All
                                         </Button>
                                     )}
-                                    <Button variant="danger" size="sm" leftIcon={renderIcon(icons?.trash, 18, undefined, 'Delete')} onClick={handleBulkDelete}>
-                                        Delete ({selectedIds.size})
-                                    </Button>
+                                    {bulkDeleteConfirm ? (
+                                        <>
+                                            <Button variant="danger" size="sm" onClick={handleBulkDelete}>
+                                                Confirm ({selectedIds.size})
+                                            </Button>
+                                            <Button variant="secondary" size="sm" onClick={cancelBulkDelete}>
+                                                Cancel
+                                            </Button>
+                                        </>
+                                    ) : (
+                                        <Button variant="danger" size="sm" leftIcon={renderIcon(icons?.trash, 18, undefined, 'Delete')} onClick={handleBulkDelete}>
+                                            Delete ({selectedIds.size})
+                                        </Button>
+                                    )}
                                 </>
                             ) : (
                                 <Button variant="secondary" size="sm" onClick={handleSelectAll}>
@@ -1043,17 +1098,35 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                                         </div>
 
                                         <div onClick={(e) => e.stopPropagation()}>
-                                            <Button
-                                                variant="danger"
-                                                size="sm"
-                                                onClick={() => {
-                                                    if (confirm('Delete this file?')) {
-                                                        deleteAsset(asset);
-                                                    }
-                                                }}
-                                            >
-                                                Delete
-                                            </Button>
+                                            {deleteConfirmId === asset.id ? (
+                                                <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                                    <Button
+                                                        variant="danger"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            deleteAsset(asset);
+                                                            setDeleteConfirmId(null);
+                                                        }}
+                                                    >
+                                                        Confirm
+                                                    </Button>
+                                                    <Button
+                                                        variant="secondary"
+                                                        size="sm"
+                                                        onClick={() => setDeleteConfirmId(null)}
+                                                    >
+                                                        Cancel
+                                                    </Button>
+                                                </div>
+                                            ) : (
+                                                <Button
+                                                    variant="danger"
+                                                    size="sm"
+                                                    onClick={() => setDeleteConfirmId(asset.id!)}
+                                                >
+                                                    Delete
+                                                </Button>
+                                            )}
                                         </div>
                                     </div>
                                 );
@@ -1096,6 +1169,8 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                                         onDeleteAsset={deleteAsset}
                                         renderTypeIcon={renderTypeIcon}
                                         iconMap={iconMap}
+                                        isDeleteConfirm={deleteConfirmId === asset.id}
+                                        onDeleteConfirmChange={setDeleteConfirmId}
                                         draggable={draggable && !ItemWrapper}
                                         isDragging={draggingId === asset.id}
                                         onDragStart={(e) => handleDragStart(asset, e)}

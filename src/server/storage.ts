@@ -189,6 +189,31 @@ export async function saveThumbnail(
 }
 
 /**
+ * Delete all media files for a user (entire user directory)
+ * Used for account deletion
+ */
+export async function deleteUserMediaDirectory(userId: string): Promise<void> {
+    // Validate userId
+    if (!userId || typeof userId !== 'string' || userId.trim().length === 0) {
+        throw new Error('User ID is required');
+    }
+
+    // Security: prevent path traversal
+    if (userId.includes('..') || userId.includes('/') || userId.includes('\\')) {
+        throw new Error('Invalid user ID format');
+    }
+
+    const userPath = getUserMediaPath(userId);
+
+    // Only delete if directory exists
+    if (existsSync(userPath)) {
+        // Use rm with recursive option (Node 14.14+)
+        const { rm } = await import('fs/promises');
+        await rm(userPath, { recursive: true, force: true });
+    }
+}
+
+/**
  * List all files for a user (used when no database is configured)
  *
  * @param userId - User ID to list files for

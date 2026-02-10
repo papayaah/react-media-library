@@ -219,6 +219,7 @@ export interface MediaGridIcons {
     zoomOut?: IconComponent | ReactNode;
     undo?: IconComponent | ReactNode;
     hand?: IconComponent | ReactNode;
+    cloud?: IconComponent | ReactNode;
 }
 
 export interface MediaLibraryConfig {
@@ -489,4 +490,33 @@ export interface ComponentPreset {
     PexelsImagePicker?: React.FC<PexelsImagePickerProps>;
     /** Optional: Freepik Content Picker. If provided, enables Freepik integration. */
     FreepikContentPicker?: React.FC<FreepikContentPickerProps>;
+}
+
+export interface QuickMediaPickerProps {
+    /** Called when user selects a media asset from the library */
+    onSelectMedia: (mediaId: number) => void;
+    /** Called when user selects a Pexels image */
+    onSelectPexels?: (url: string) => void;
+    /** Called when the picker should close */
+    onClose: () => void;
+    /** Component preset for headless rendering of inner content */
+    preset: ComponentPreset;
+    /** Icon set for headless rendering */
+    icons?: MediaGridIcons;
+    /** Pexels images (static array) or async fetch function. If omitted, Pexels tab is hidden. */
+    pexels?: PexelsImage[] | (() => Promise<PexelsImage[]>);
+    /** Width of the picker container in px (default: 280) */
+    width?: number;
+    /** Height of the scrollable content area in px (default: 200) */
+    scrollHeight?: number;
+    /** Max items to show in the library grid (default: 12) */
+    maxItems?: number;
+    /** Number of columns in the grids (default: 3) */
+    columns?: number;
+    /** Gap between grid items (default: '6px') */
+    gap?: string;
+    /** CSS class for the outer container */
+    className?: string;
+    /** Inline style for the outer container */
+    style?: React.CSSProperties;
 }
