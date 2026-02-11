@@ -207,6 +207,30 @@ export const getAssetFromDB = async (id: number): Promise<MediaAsset | undefined
     return db.get('assets', id);
 };
 
+// Detect generic clipboard paste names and rename them
+const normalizeFileName = (fileName: string, mimeType: string): string => {
+    const lowerName = fileName.toLowerCase();
+    // Common clipboard paste names from different browsers/OS
+    const clipboardPatterns = [
+        'image.png',
+        'image.jpg',
+        'image.jpeg',
+        'image.gif',
+        'image.webp',
+        'pasted image.png',
+        'clipboard.png',
+        'screenshot.png',
+    ];
+
+    if (clipboardPatterns.includes(lowerName)) {
+        // Get extension from mime type or original filename
+        const ext = mimeType.split('/')[1]?.split('+')[0] || fileName.split('.').pop() || 'png';
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        return `clipboard-${timestamp}.${ext}`;
+    }
+    return fileName;
+};
+
 export const importFileToLibrary = async (
     file: File,
     options?: {
@@ -216,6 +240,7 @@ export const importFileToLibrary = async (
 ): Promise<number> => {
     const directory = options?.opfsDirectory || DEFAULT_OPFS_DIR;
     const fileType = getAssetType(file.type);
+    const fileName = normalizeFileName(file.name, file.type);
 
     let width: number | undefined;
     let height: number | undefined;
@@ -250,13 +275,13 @@ export const importFileToLibrary = async (
         }
     }
 
-    const handleName = await saveFileToOpfs(file, directory, { nameHint: file.name || 'upload' });
+    const handleName = await saveFileToOpfs(file, directory, { nameHint: fileName || 'upload' });
     const asset: Omit<MediaAsset, 'id'> = {
         handleName,
         thumbnailHandleName,
         thumbnailMimeType,
         thumbnailSize,
-        fileName: file.name,
+        fileName,
         fileType,
         mimeType: file.type,
         size: file.size,
