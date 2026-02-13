@@ -254,6 +254,9 @@ const GridAssetItem: React.FC<GridAssetItemProps> = ({
                 <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
                     <Badge variant="default">{asset.fileType}</Badge>
                     <Badge variant="secondary">{formatFileSize(asset.size)}</Badge>
+                    {asset.width && asset.height && (
+                        <Badge variant="secondary">{asset.width} × {asset.height}</Badge>
+                    )}
                 </div>
 
                 <div style={{ fontSize: '0.75rem', color: '#4b5563', marginBottom: '0.75rem' }}>
@@ -1002,7 +1005,7 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                             <div style={{
                                 display: 'grid',
-                                gridTemplateColumns: '40px 60px 1fr 100px 100px 150px 80px',
+                                gridTemplateColumns: '40px 60px 1fr 100px 100px 120px 150px 80px',
                                 gap: '1rem',
                                 padding: '0.75rem',
                                 borderBottom: '1px solid #e5e7eb',
@@ -1015,6 +1018,7 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                                 <div>Filename</div>
                                 <div>Type</div>
                                 <div>Size</div>
+                                <div>Resolution</div>
                                 <div>Date</div>
                                 <div>Actions</div>
                             </div>
@@ -1045,7 +1049,7 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                                         onClick={() => handleAssetClick(asset)}
                                         style={{
                                             display: 'grid',
-                                            gridTemplateColumns: '40px 60px 1fr 100px 100px 150px 80px',
+                                            gridTemplateColumns: '40px 60px 1fr 100px 100px 120px 150px 80px',
                                             gap: '1rem',
                                             padding: '0.5rem',
                                             alignItems: 'center',
@@ -1091,6 +1095,10 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
 
                                         <div style={{ color: '#6b7280' }}>
                                             {formatFileSize(asset.size)}
+                                        </div>
+
+                                        <div style={{ color: '#6b7280' }}>
+                                            {asset.width && asset.height ? `${asset.width} × ${asset.height}` : '—'}
                                         </div>
 
                                         <div style={{ color: '#6b7280' }}>
