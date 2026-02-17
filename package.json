@@ -1,6 +1,7 @@
 {
     "name": "@reactkits.dev/react-media-library",
     "version": "0.0.3",
+    "type": "module",
     "description": "Headless Media Library for React 19",
     "license": "MIT",
     "repository": {
