@@ -178,7 +178,11 @@ const toThumbnailBlob = async (
 // DB Helpers
 export const addAssetToDB = async (asset: Omit<MediaAsset, 'id'>) => {
     const db = await initDB();
-    return db.add('assets', asset as MediaAsset);
+    const id = await db.add('assets', asset as MediaAsset);
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('media-library-updated'));
+    }
+    return id;
 };
 
 export const listAssetsFromDB = async () => {
@@ -189,7 +193,10 @@ export const listAssetsFromDB = async () => {
 
 export const deleteAssetFromDB = async (id: number) => {
     const db = await initDB();
-    return db.delete('assets', id);
+    await db.delete('assets', id);
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('media-library-updated'));
+    }
 };
 
 export const updateAssetInDB = async (id: number, updates: Partial<MediaAsset>) => {
@@ -199,6 +206,11 @@ export const updateAssetInDB = async (id: number, updates: Partial<MediaAsset>) 
 
     const updated = { ...existing, ...updates, updatedAt: Date.now() };
     await db.put('assets', updated);
+
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('media-library-updated'));
+    }
+
     return updated;
 };
 
@@ -321,6 +333,10 @@ export const clearAllMediaData = async (
     } catch (error) {
         // Directory may not exist, which is fine
         console.log('[MediaLibrary] OPFS directory clear:', error);
+    }
+
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('media-library-updated'));
     }
 
     console.log('[MediaLibrary] All media data cleared');

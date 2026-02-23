@@ -230,6 +230,8 @@ export const useMediaLibrary = (options?: {
         }
     }, []);
 
+    const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
     useEffect(() => {
         const init = async () => {
             await loadAssets();
@@ -239,7 +241,19 @@ export const useMediaLibrary = (options?: {
             });
         };
         init();
+
+        const handleUpdate = () => {
+            if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
+            refreshTimeoutRef.current = setTimeout(() => {
+                loadAssets();
+            }, 100);
+        };
+
+        window.addEventListener('media-library-updated', handleUpdate);
+
         return () => {
+            window.removeEventListener('media-library-updated', handleUpdate);
+            if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
             // Cleanup object URLs
             assetsRef.current.forEach((asset) => {
                 if (asset.previewUrl) {
