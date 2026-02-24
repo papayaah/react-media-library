@@ -48,6 +48,7 @@ export type {
     GridProps,
     AIGenerateSidebarProps,
     QuickMediaPickerProps,
+    TextProps,
 } from './types';
 
 // Services (client-side)

@@ -63,6 +63,10 @@
                 "import": "./dist/server/nextjs/routes.mjs",
                 "require": "./dist/server/nextjs/routes.js"
             }
+        },
+        "./presets/mantine": {
+            "types": "./src/presets/mantine.tsx",
+            "import": "./src/presets/mantine.tsx"
         }
     },
     "files": [
@@ -86,7 +90,9 @@
         "lucide-react": ">=0.300.0",
         "react": "^19.0.0",
         "react-dom": "^19.0.0",
-        "sharp": ">=0.34.0"
+        "sharp": ">=0.34.0",
+        "@mantine/core": ">=8.0.0",
+        "@mantine/hooks": ">=8.0.0"
     },
     "peerDependenciesMeta": {
         "cropperjs": {
@@ -104,8 +110,8 @@
     },
     "devDependencies": {
         "lucide-react": "^0.554.0",
-        "@mantine/core": "^7.15.2",
-        "@mantine/hooks": "^7.15.2",
+        "@mantine/core": "8.3.9",
+        "@mantine/hooks": "8.3.9",
         "@storybook/addon-essentials": "^8.6.14",
         "@storybook/addon-interactions": "^8.6.14",
         "@storybook/addon-links": "^8.6.14",

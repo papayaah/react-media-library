@@ -1,3 +1,5 @@
+'use client';
+
 import {
     Box,
     Card as MantineCard,
@@ -18,7 +20,8 @@ import {
     SimpleGrid,
     Group,
 } from '@mantine/core';
-import { ComponentPreset, CardProps, ButtonProps, TextInputProps, SelectProps, CheckboxProps, BadgeProps, ImageProps, ModalProps, LoaderProps, EmptyStateProps, FileButtonProps, GridProps, ViewerProps, ViewerThumbnailProps, PexelsImagePickerProps, FreepikContentPickerProps } from '../types';
+import { X, Image as PhotoIcon, Check } from 'lucide-react';
+import { ComponentPreset, CardProps, ButtonProps, TextInputProps, SelectProps, CheckboxProps, BadgeProps, ImageProps, ModalProps, LoaderProps, EmptyStateProps, FileButtonProps, GridProps, ViewerProps, ViewerThumbnailProps, PexelsImagePickerProps, FreepikContentPickerProps, AIGenerateSidebarProps } from '../types';
 
 /**
  * Mantine UI Component Preset
@@ -45,7 +48,7 @@ export const mantinePreset: ComponentPreset = {
         </MantineCard>
     ),
 
-    Button: ({ children, onClick, variant = 'primary', disabled, loading, size = 'md', fullWidth, leftIcon, className }: ButtonProps) => {
+    Button: ({ children, onClick, variant = 'primary', disabled, loading, size = 'md', fullWidth, leftIcon, className, color, style }: ButtonProps) => {
         const variantMap = {
             primary: 'filled',
             secondary: 'light',
@@ -57,13 +60,14 @@ export const mantinePreset: ComponentPreset = {
             <MantineButton
                 onClick={onClick}
                 variant={variantMap[variant]}
-                color={variant === 'danger' ? 'red' : 'blue'}
+                color={color || (variant === 'danger' ? 'red' : 'blue')}
                 disabled={disabled}
                 loading={loading}
                 size={size}
                 fullWidth={fullWidth}
                 leftSection={leftIcon}
                 className={className}
+                style={style}
             >
                 {children}
             </MantineButton>
@@ -162,14 +166,19 @@ export const mantinePreset: ComponentPreset = {
         <MantineSkeleton className={className} style={{ width: '100%', height: '100%' }} />
     ),
 
-    UploadCard: ({ onClick, isDragging, className, children }: { onClick: () => void; isDragging: boolean; className?: string; children?: React.ReactNode }) => (
+    Text: ({ children, size, fw, c, mb, className, style }: any) => (
+        <Text size={size} fw={fw} c={c} mb={mb} className={className} style={style}>
+            {children}
+        </Text>
+    ),
+
+    UploadCard: ({ onClick, isDragging, className, style, children }: { onClick: () => void; isDragging: boolean; className?: string; style?: React.CSSProperties; children?: React.ReactNode }) => (
         <UnstyledButton
             onClick={onClick}
             className={className}
             style={{
                 height: '100%',
                 width: '100%',
-                minHeight: '300px',
                 border: `2px dashed ${isDragging ? 'var(--mantine-color-blue-6)' : 'var(--mantine-color-gray-4)'}`,
                 borderRadius: 'var(--mantine-radius-md)',
                 backgroundColor: isDragging ? 'var(--mantine-color-blue-0)' : 'transparent',
@@ -177,6 +186,7 @@ export const mantinePreset: ComponentPreset = {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                ...style,
             }}
         >
             {children}
@@ -260,6 +270,7 @@ export const mantinePreset: ComponentPreset = {
             onClose={onClose}
             title={
                 <Group gap="xs">
+                    <PhotoIcon size={20} />
                     <Text fw={600}>Pexels Images</Text>
                 </Group>
             }
@@ -367,6 +378,7 @@ export const mantinePreset: ComponentPreset = {
                         onClick={onImport}
                         loading={importing}
                         disabled={selected.size === 0}
+                        leftSection={<Check size={16} />}
                     >
                         Import {selected.size > 0 ? `(${selected.size})` : ''}
                     </MantineButton>
@@ -562,4 +574,133 @@ export const mantinePreset: ComponentPreset = {
             </Box>
         </MantineModal>
     ),
+    AIGenerateSidebar: ({
+        isOpen,
+        onClose,
+        prompt,
+        onPromptChange,
+        width,
+        onWidthChange,
+        height,
+        onHeightChange,
+        steps,
+        onStepsChange,
+        model,
+        onModelChange,
+        onPresetChange,
+        error,
+        generating,
+        onGenerate,
+        onCancel,
+    }: AIGenerateSidebarProps) => {
+        if (!isOpen) return null;
+
+        return (
+            <Box
+                style={{
+                    width: '400px',
+                    height: '100%',
+                    borderLeft: '1px solid var(--mantine-color-gray-3)',
+                    backgroundColor: 'var(--mantine-color-body)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    position: 'absolute',
+                    right: 0,
+                    top: 0,
+                    zIndex: 100,
+                    boxShadow: 'var(--mantine-shadow-md)',
+                }}
+            >
+                <Box
+                    style={{
+                        padding: '1rem',
+                        borderBottom: '1px solid var(--mantine-color-gray-3)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                    }}
+                >
+                    <Text fw={600}>Generate image</Text>
+                    <UnstyledButton onClick={onClose} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 4, padding: 4 }}>
+                        <X size={20} />
+                    </UnstyledButton>
+                </Box>
+                <Box style={{ flex: 1, overflow: 'auto', padding: '1rem' }}>
+                    <Stack gap="md">
+                        <div>
+                            <Text size="sm" fw={600} mb={4}>Prompt</Text>
+                            <MantineTextInput
+                                value={prompt}
+                                onChange={(e) => onPromptChange(e.target.value)}
+                                placeholder="Describe the image you want..."
+                            />
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                            <div>
+                                <Text size="sm" fw={600} mb={4}>Width</Text>
+                                <MantineTextInput
+                                    value={width}
+                                    onChange={(e) => onWidthChange(e.target.value)}
+                                    type="number"
+                                />
+                            </div>
+                            <div>
+                                <Text size="sm" fw={600} mb={4}>Height</Text>
+                                <MantineTextInput
+                                    value={height}
+                                    onChange={(e) => onHeightChange(e.target.value)}
+                                    type="number"
+                                />
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                            <div>
+                                <Text size="sm" fw={600} mb={4}>Preset</Text>
+                                <MantineSelect
+                                    value=""
+                                    onChange={(val) => val && onPresetChange(val)}
+                                    placeholder="Pick a size"
+                                    data={[
+                                        { value: '512', label: '512 × 512' },
+                                        { value: '768', label: '768 × 768' },
+                                        { value: '1024', label: '1024 × 1024' },
+                                    ]}
+                                />
+                            </div>
+                            <div>
+                                <Text size="sm" fw={600} mb={4}>Steps</Text>
+                                <MantineTextInput
+                                    value={steps}
+                                    onChange={(e) => onStepsChange(e.target.value)}
+                                    type="number"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <Text size="sm" fw={600} mb={4}>Model (optional)</Text>
+                            <MantineTextInput
+                                value={model}
+                                onChange={(e) => onModelChange(e.target.value)}
+                                placeholder="Model identifier..."
+                            />
+                        </div>
+
+                        {error && <Text size="sm" c="red">{error}</Text>}
+
+                        <Group justify="flex-end" gap="sm" mt="md">
+                            <MantineButton variant="subtle" onClick={onCancel} disabled={generating}>
+                                Cancel
+                            </MantineButton>
+                            <MantineButton onClick={onGenerate} loading={generating} disabled={!prompt.trim()}>
+                                Generate
+                            </MantineButton>
+                        </Group>
+                    </Stack>
+                </Box>
+            </Box>
+        );
+    },
 };

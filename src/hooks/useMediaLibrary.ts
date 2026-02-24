@@ -8,7 +8,6 @@ import {
     importFileToLibrary,
     updateAssetInDB,
     addAssetToDB,
-    saveFileToOpfs,
 } from '../services/storage';
 import { MediaSyncService } from '../services/sync';
 import { MediaAIGenerateRequest, MediaAIGenerator, MediaAsset, MediaPexelsProvider, PexelsImage, MediaFreepikProvider, FreepikContent, MediaSyncConfig } from '../types';
@@ -55,6 +54,9 @@ export const useMediaLibrary = (options?: {
     const syncServiceRef = useRef<MediaSyncService | null>(null);
     const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle');
     const hasPulledCloudAssets = useRef(false);
+
+    // Flag to suppress loadAssets during cloud pull (prevents flicker from per-asset event dispatch)
+    const isPullingCloudAssetsRef = useRef(false);
 
     // Initialize sync service
     useEffect(() => {
@@ -125,40 +127,32 @@ export const useMediaLibrary = (options?: {
             if (!userId) return; // Not authenticated, skip
 
             hasPulledCloudAssets.current = true;
+            // Suppress loadAssets during pull to prevent per-asset event-driven reloads
+            isPullingCloudAssetsRef.current = true;
+
+            // Collect assets for batch state update (avoids N re-renders during pull)
+            const newCloudAssets: MediaAsset[] = [];
+            const removedAssetIds: number[] = [];
 
             const result = await syncService.pullCloudAssets(
                 // Get local assets
                 async () => listAssetsFromDB(),
-                // Add cloud asset to local DB (download file to OPFS)
+                // Add cloud asset to local DB (lazy download - don't hit server for blob yet)
                 async (cloudAsset: MediaAsset) => {
                     try {
-                        // Download file from server
-                        const file = await syncService.downloadAssetFile(cloudAsset);
-                        if (!file) {
-                            console.warn('[MediaLibrary] Failed to download file for asset:', cloudAsset.cloudId);
-                            return;
-                        }
+                        // Save metadata to IndexedDB immediately without downloading file
+                        const id = await addAssetToDB(cloudAsset);
 
-                        // Save to OPFS
-                        const handleName = await saveFileToOpfs(file, undefined, { nameHint: cloudAsset.fileName });
-
-                        // Save to IndexedDB with local handle
-                        const localAsset: Omit<MediaAsset, 'id'> = {
-                            ...cloudAsset,
-                            handleName,
-                            syncStatus: 'synced',
-                            syncedAt: Date.now(),
-                        };
-                        const id = await addAssetToDB(localAsset);
-
-                        // Generate preview URL
+                        // If it's an image/video, we can use the cloudUrl for an immediate preview
                         let previewUrl: string | undefined;
-                        if (cloudAsset.fileType === 'image') {
-                            previewUrl = URL.createObjectURL(file);
+                        if (cloudAsset.cloudUrl && (cloudAsset.fileType === 'image' || cloudAsset.fileType === 'video')) {
+                            previewUrl = cloudAsset.cloudUrl.startsWith('http') || cloudAsset.cloudUrl.startsWith('/')
+                                ? cloudAsset.cloudUrl
+                                : `${options?.sync?.apiBaseUrl || ''}/api/media/files/${cloudAsset.cloudUrl}`;
                         }
 
-                        // Add to in-memory state
-                        setAssetsTracked((prev) => [{ ...localAsset, id, previewUrl }, ...prev]);
+                        // Collect for batch state update instead of updating per-asset
+                        newCloudAssets.push({ ...cloudAsset, id, previewUrl });
                     } catch (err) {
                         console.error('[MediaLibrary] Failed to add cloud asset locally:', err);
                     }
@@ -169,6 +163,7 @@ export const useMediaLibrary = (options?: {
                         // Delete from local storage (IndexedDB + OPFS)
                         if (deletedAsset.id) {
                             await deleteAssetFromDB(deletedAsset.id);
+                            removedAssetIds.push(deletedAsset.id);
                         }
                         await deleteFileFromOpfs(deletedAsset.handleName);
                         if (deletedAsset.thumbnailHandleName) {
@@ -177,20 +172,34 @@ export const useMediaLibrary = (options?: {
                         if (deletedAsset.previewUrl) {
                             URL.revokeObjectURL(deletedAsset.previewUrl);
                         }
-
-                        // Remove from in-memory state
-                        setAssetsTracked((prev) => prev.filter((a) => a.id !== deletedAsset.id));
-                        console.log('[MediaLibrary] Removed locally deleted asset:', deletedAsset.cloudId, deletedAsset.fileName);
                     } catch (err) {
                         console.error('[MediaLibrary] Failed to remove deleted asset:', err);
                     }
                 }
             );
 
+            // Single batch state update — one render instead of N
+            if (newCloudAssets.length > 0 || removedAssetIds.length > 0) {
+                setAssetsTracked((prev) => {
+                    let next = prev;
+                    if (removedAssetIds.length > 0) {
+                        const removedSet = new Set(removedAssetIds);
+                        next = next.filter((a) => !removedSet.has(a.id!));
+                    }
+                    if (newCloudAssets.length > 0) {
+                        next = [...newCloudAssets, ...next];
+                    }
+                    return next;
+                });
+            }
+
+            isPullingCloudAssetsRef.current = false;
+
             if (result.added > 0 || result.removed > 0) {
                 console.log(`[MediaLibrary] Sync complete: ${result.added} added, ${result.removed} removed`);
             }
         } catch (err) {
+            isPullingCloudAssetsRef.current = false;
             console.error('[MediaLibrary] Pull cloud assets error:', err);
         }
     }, [options?.sync, setAssetsTracked]);
@@ -203,24 +212,47 @@ export const useMediaLibrary = (options?: {
             // Reverse to show newest first
             const reversedAssets = storedAssets.reverse();
 
-            // Generate preview URLs for images
+            // Generate preview URLs for images and anything with a thumbnail
             const assetsWithPreviews = await Promise.all(
                 reversedAssets.map(async (asset) => {
-                    if (asset.fileType === 'image') {
+                    const hasThumbnail = !!asset.thumbnailHandleName;
+                    const isMedia = asset.fileType === 'image' || asset.fileType === 'video';
+
+                    // Fallback for incorrectly typed assets
+                    let shouldTryPreview = hasThumbnail || isMedia;
+                    if (!shouldTryPreview && asset.fileType === 'other' && asset.fileName) {
+                        const ext = asset.fileName.split('.').pop()?.toLowerCase();
+                        const mediaExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'avif', 'heic', 'heif', 'mp4', 'webm', 'mov'];
+                        if (ext && mediaExts.includes(ext)) {
+                            shouldTryPreview = true;
+                        }
+                    }
+
+                    if (shouldTryPreview) {
                         const file = asset.thumbnailHandleName
                             ? await getFileFromOpfs(asset.thumbnailHandleName)
-                            : await getFileFromOpfs(asset.handleName);
+                            : (asset.handleName ? await getFileFromOpfs(asset.handleName) : null);
+
                         if (file) {
                             return { ...asset, previewUrl: URL.createObjectURL(file) };
+                        } else if (asset.cloudUrl) {
+                            // Fallback to cloud URL if local file is missing or hasn't been downloaded yet
+                            const previewUrl = asset.cloudUrl.startsWith('http') || asset.cloudUrl.startsWith('/')
+                                ? asset.cloudUrl
+                                : `${options?.sync?.apiBaseUrl || ''}/api/media/files/${asset.cloudUrl}`;
+                            return { ...asset, previewUrl };
                         }
                     }
                     return asset;
                 })
             );
 
-            // Cleanup old object URLs to avoid leaks when reloading list
+            // Cleanup old blob: object URLs to avoid leaks when reloading list
+            // Only revoke actual blob URLs (not server URLs like /api/media/files/...)
             assetsRef.current.forEach((a) => {
-                if (a.previewUrl) URL.revokeObjectURL(a.previewUrl);
+                if (a.previewUrl && a.previewUrl.startsWith('blob:')) {
+                    URL.revokeObjectURL(a.previewUrl);
+                }
             });
             setAssetsTracked(assetsWithPreviews);
         } catch (err) {
@@ -243,6 +275,8 @@ export const useMediaLibrary = (options?: {
         init();
 
         const handleUpdate = () => {
+            // Suppress during cloud pull — pull already manages state in a single batch
+            if (isPullingCloudAssetsRef.current) return;
             if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
             refreshTimeoutRef.current = setTimeout(() => {
                 loadAssets();
@@ -254,9 +288,9 @@ export const useMediaLibrary = (options?: {
         return () => {
             window.removeEventListener('media-library-updated', handleUpdate);
             if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
-            // Cleanup object URLs
+            // Cleanup blob: object URLs only
             assetsRef.current.forEach((asset) => {
-                if (asset.previewUrl) {
+                if (asset.previewUrl && asset.previewUrl.startsWith('blob:')) {
                     URL.revokeObjectURL(asset.previewUrl);
                 }
             });
@@ -274,10 +308,11 @@ export const useMediaLibrary = (options?: {
                 const stored = await db.get('assets', id);
 
                 let previewUrl: string | undefined;
-                if (stored?.fileType === 'image') {
-                    const previewFile = stored.thumbnailHandleName
+                const isMedia = stored?.fileType === 'image' || stored?.fileType === 'video';
+                if (isMedia || stored?.thumbnailHandleName) {
+                    const previewFile = stored?.thumbnailHandleName
                         ? await getFileFromOpfs(stored.thumbnailHandleName)
-                        : await getFileFromOpfs(stored.handleName);
+                        : stored?.handleName ? await getFileFromOpfs(stored.handleName) : null;
                     if (previewFile) {
                         previewUrl = URL.createObjectURL(previewFile);
                     }
@@ -344,7 +379,9 @@ export const useMediaLibrary = (options?: {
         try {
             // Delete from local storage (IndexedDB + OPFS)
             await deleteAssetFromDB(asset.id);
-            await deleteFileFromOpfs(asset.handleName);
+            if (asset.handleName) {
+                await deleteFileFromOpfs(asset.handleName);
+            }
             if (asset.thumbnailHandleName) {
                 await deleteFileFromOpfs(asset.thumbnailHandleName);
             }

@@ -27,6 +27,8 @@ export default defineConfig({
                 'lucide-react',
                 'next/server',
                 'sharp',
+                '@mantine/core',
+                '@mantine/hooks',
                 // Node.js built-ins for server code
                 'fs',
                 'fs/promises',

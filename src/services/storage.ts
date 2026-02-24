@@ -251,7 +251,7 @@ export const importFileToLibrary = async (
     },
 ): Promise<number> => {
     const directory = options?.opfsDirectory || DEFAULT_OPFS_DIR;
-    const fileType = getAssetType(file.type);
+    const fileType = getAssetType(file.type, file.name);
     const fileName = normalizeFileName(file.name, file.type);
 
     let width: number | undefined;
@@ -260,7 +260,8 @@ export const importFileToLibrary = async (
     let thumbnailMimeType: string | undefined;
     let thumbnailSize: number | undefined;
 
-    if (fileType === 'image' && typeof window !== 'undefined' && typeof document !== 'undefined') {
+    // Try to generate thumbnail for images (even if detected as 'other' but has image extension)
+    if ((fileType === 'image' || file.type.startsWith('image/')) && typeof window !== 'undefined' && typeof document !== 'undefined') {
         try {
             const img = await loadImageFromFile(file);
             width = img.naturalWidth || img.width;
@@ -306,11 +307,28 @@ export const importFileToLibrary = async (
     return typeof id === 'number' ? id : Number(id);
 };
 
-export const getAssetType = (mimeType: string): MediaType => {
+export const getAssetType = (mimeType: string, fileName?: string): MediaType => {
     if (mimeType.startsWith('image/')) return 'image';
     if (mimeType.startsWith('video/')) return 'video';
     if (mimeType.startsWith('audio/')) return 'audio';
     if (mimeType.startsWith('text/') || mimeType.includes('pdf')) return 'document';
+
+    // Fallback to extension
+    if (fileName) {
+        const ext = fileName.split('.').pop()?.toLowerCase();
+        if (ext) {
+            const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'avif', 'heic', 'heif'];
+            const videoExts = ['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv'];
+            const audioExts = ['mp3', 'wav', 'ogg', 'm4a', 'flac'];
+            const docExts = ['pdf', 'doc', 'docx', 'txt', 'rtf', 'odt'];
+
+            if (imageExts.includes(ext)) return 'image';
+            if (videoExts.includes(ext)) return 'video';
+            if (audioExts.includes(ext)) return 'audio';
+            if (docExts.includes(ext)) return 'document';
+        }
+    }
+
     return 'other';
 };
 

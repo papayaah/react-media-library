@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useMemo } from 'react';
 import { useMediaLibraryContext } from './MediaLibraryProvider';
 import { MediaAsset, ComponentPreset, MediaGridIcons, DragDropProps } from '../types';
@@ -8,6 +10,12 @@ interface MediaGridProps extends DragDropProps {
     preset: ComponentPreset;
     icons?: MediaGridIcons;
     onSelectionChange?: (selectedAssets: MediaAsset[]) => void;
+    /** Default view mode (default: 'grid') */
+    defaultViewMode?: 'grid' | 'list' | 'masonry';
+    /** Default item variant (default: 'default') */
+    defaultItemVariant?: 'default' | 'minimal';
+    /** Columns in masonry view (default: 4) */
+    masonryColumns?: number;
 }
 
 const typeIconMap = (icons: MediaGridProps['icons']) => ({
@@ -52,6 +60,7 @@ interface GridAssetItemProps {
     onDeleteAsset: (asset: MediaAsset) => void;
     renderTypeIcon: (icon: any, size: number) => React.ReactNode;
     iconMap: any;
+    icons?: MediaGridIcons;
     // Delete confirmation (double-tap pattern)
     isDeleteConfirm: boolean;
     onDeleteConfirmChange: (assetId: number | null) => void;
@@ -60,6 +69,7 @@ interface GridAssetItemProps {
     isDragging?: boolean;
     onDragStart?: (e: React.DragEvent) => void;
     onDragEnd?: (e: React.DragEvent) => void;
+    variant?: 'default' | 'minimal';
 }
 
 const GridAssetItem: React.FC<GridAssetItemProps> = ({
@@ -72,12 +82,14 @@ const GridAssetItem: React.FC<GridAssetItemProps> = ({
     onDeleteAsset,
     renderTypeIcon,
     iconMap,
+    icons,
     isDeleteConfirm,
     onDeleteConfirmChange,
     draggable,
     isDragging,
     onDragStart,
     onDragEnd,
+    variant = 'default',
 }) => {
     const { Card, Image, Badge, Button, Skeleton } = preset;
     const [isImageLoaded, setIsImageLoaded] = useState(false);
@@ -137,49 +149,88 @@ const GridAssetItem: React.FC<GridAssetItemProps> = ({
                 </div>
             )}
 
-            {/* View Button - Top Right */}
+            {/* Top Right Actions */}
             <div
                 style={{
                     position: 'absolute',
                     top: '0.5rem',
                     right: '0.5rem',
                     zIndex: 10,
-                    opacity: isHovered ? 1 : 0,
-                    transition: 'opacity 0.2s',
-                    cursor: 'pointer',
-                }}
-                onClick={(e) => {
-                    e.stopPropagation();
-                    onAssetClick(asset);
-                }}
-                title="View"
-            >
-                <div style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '50%',
-                    background: 'rgba(255, 255, 255, 0.9)',
                     display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: '0 2px 4px 0 rgba(0, 0, 0, 0.1)',
-                }}>
-                    {/* Zoom icon */}
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    gap: '0.25rem',
+                    opacity: isHovered || isSelected ? 1 : 0,
+                    transition: 'opacity 0.2s',
+                }}
+            >
+                {/* View/Zoom Button */}
+                <div
+                    style={{
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '50%',
+                        background: 'rgba(255, 255, 255, 0.9)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 2px 4px 0 rgba(0, 0, 0, 0.1)',
+                        cursor: 'pointer',
+                    }}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onAssetClick(asset);
+                    }}
+                    title="View"
+                >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="11" cy="11" r="8"></circle>
                         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                         <line x1="11" y1="8" x2="11" y2="14"></line>
                         <line x1="8" y1="11" x2="14" y2="11"></line>
                     </svg>
                 </div>
+
+                {/* More/Dots Button */}
+                <div
+                    style={{
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '50%',
+                        background: 'rgba(255, 255, 255, 0.9)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 2px 4px 0 rgba(0, 0, 0, 0.1)',
+                        cursor: 'pointer',
+                    }}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        // For now we'll just toggle the delete confirmation or similar
+                        // In a real app, this would open a popover menu
+                        onDeleteConfirmChange(isDeleteConfirm ? null : asset.id!);
+                    }}
+                    title="More options"
+                >
+                    {icons?.dots ? renderIcon(icons.dots, 14) : (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="1"></circle>
+                            <circle cx="19" cy="12" r="1"></circle>
+                            <circle cx="5" cy="12" r="1"></circle>
+                        </svg>
+                    )}
+                </div>
             </div>
 
             <div
                 style={{
                     width: '100%',
-                    height: '160px',
+                    height: variant === 'minimal' ? 'auto' : '160px',
+                    minHeight: variant === 'minimal' ? undefined : '160px',
+                    // Reserve space in masonry/minimal mode using known aspect ratio to prevent layout shift
+                    aspectRatio: variant === 'minimal' && asset.width && asset.height
+                        ? `${asset.width} / ${asset.height}`
+                        : undefined,
                     overflow: 'hidden',
-                    borderBottom: '1px solid #e5e7eb',
+                    borderBottom: variant === 'minimal' ? 'none' : '1px solid #e5e7eb',
                     position: 'relative',
                     // Always use a light background with subtle checkerboard to show transparency
                     backgroundColor: '#ffffff',
@@ -191,7 +242,7 @@ const GridAssetItem: React.FC<GridAssetItemProps> = ({
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
             >
-                {(asset.fileType === 'image' || asset.fileType === 'video') && asset.previewUrl ? (
+                {asset.previewUrl ? (
                     <>
                         {!isImageLoaded && (
                             <div style={{
@@ -204,7 +255,7 @@ const GridAssetItem: React.FC<GridAssetItemProps> = ({
                                 <Skeleton className="w-full h-full" />
                             </div>
                         )}
-                        {asset.fileType === 'video' ? (
+                        {asset.fileType === 'video' || (asset.fileType === 'other' && asset.fileName?.toLowerCase().match(/\.(mp4|webm|mov|ogg)$/)) ? (
                             <video
                                 src={asset.previewUrl}
                                 style={{
@@ -228,8 +279,8 @@ const GridAssetItem: React.FC<GridAssetItemProps> = ({
                                 style={{
                                     width: '100%',
                                     height: '100%',
-                                    objectFit: 'contain',
-                                    padding: '8px',
+                                    objectFit: variant === 'minimal' ? 'cover' : 'contain',
+                                    padding: variant === 'minimal' ? 0 : '8px',
                                     opacity: isImageLoaded ? 1 : 0,
                                     transition: 'opacity 0.2s',
                                     display: 'block' // Remove inline spacing
@@ -244,66 +295,109 @@ const GridAssetItem: React.FC<GridAssetItemProps> = ({
                 )}
             </div>
 
-            <div style={{ padding: '0.75rem' }}>
-                <div style={{ marginBottom: '0.5rem' }}>
-                    <div style={{ fontWeight: '600', fontSize: '0.875rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {asset.fileName}
+            {variant !== 'minimal' && (
+                <div style={{ padding: '0.75rem' }}>
+                    <div style={{ marginBottom: '0.5rem' }}>
+                        <div style={{ fontWeight: '600', fontSize: '0.875rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {asset.fileName}
+                        </div>
                     </div>
-                </div>
 
-                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
-                    <Badge variant="default">{asset.fileType}</Badge>
-                    <Badge variant="secondary">{formatFileSize(asset.size)}</Badge>
-                    {asset.width && asset.height && (
-                        <Badge variant="secondary">{asset.width} × {asset.height}</Badge>
-                    )}
-                </div>
-
-                <div style={{ fontSize: '0.75rem', color: '#4b5563', marginBottom: '0.75rem' }}>
-                    {formatTimestamp(asset.createdAt)}
-                </div>
-
-                {!isSelectMode && (
-                    <div onClick={(e) => e.stopPropagation()}>
-                        {isDeleteConfirm ? (
-                            <div style={{ display: 'flex', gap: '0.25rem' }}>
-                                <div style={{ flex: 1 }}>
-                                    <Button
-                                        variant="danger"
-                                        size="sm"
-                                        fullWidth
-                                        onClick={() => {
-                                            onDeleteAsset(asset);
-                                            onDeleteConfirmChange(null);
-                                        }}
-                                    >
-                                        Confirm
-                                    </Button>
-                                </div>
-                                <div style={{ flex: 1 }}>
-                                    <Button
-                                        variant="secondary"
-                                        size="sm"
-                                        fullWidth
-                                        onClick={() => onDeleteConfirmChange(null)}
-                                    >
-                                        Cancel
-                                    </Button>
-                                </div>
-                            </div>
-                        ) : (
-                            <Button
-                                variant="danger"
-                                size="sm"
-                                fullWidth
-                                onClick={() => onDeleteConfirmChange(asset.id!)}
-                            >
-                                Delete
-                            </Button>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+                        <Badge variant="default">{asset.fileType}</Badge>
+                        <Badge variant="secondary">{formatFileSize(asset.size)}</Badge>
+                        {asset.width && asset.height && (
+                            <Badge variant="secondary">{asset.width} × {asset.height}</Badge>
                         )}
                     </div>
-                )}
-            </div>
+
+                    <div style={{ fontSize: '0.75rem', color: '#4b5563', marginBottom: '0.75rem' }}>
+                        {formatTimestamp(asset.createdAt)}
+                    </div>
+
+                    {!isSelectMode && (
+                        <div onClick={(e) => e.stopPropagation()}>
+                            {isDeleteConfirm ? (
+                                <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                    <div style={{ flex: 1 }}>
+                                        <Button
+                                            variant="danger"
+                                            size="sm"
+                                            fullWidth
+                                            onClick={() => {
+                                                onDeleteAsset(asset);
+                                                onDeleteConfirmChange(null);
+                                            }}
+                                        >
+                                            Confirm
+                                        </Button>
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <Button
+                                            variant="secondary"
+                                            size="sm"
+                                            fullWidth
+                                            onClick={() => onDeleteConfirmChange(null)}
+                                        >
+                                            Cancel
+                                        </Button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <Button
+                                    variant="danger"
+                                    size="sm"
+                                    fullWidth
+                                    onClick={() => onDeleteConfirmChange(asset.id!)}
+                                >
+                                    Delete
+                                </Button>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Minimal Variant - Delete Info */}
+            {variant === 'minimal' && isDeleteConfirm && !isSelectMode && (
+                <div
+                    style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: 'rgba(255,255,255,0.9)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '1rem',
+                        zIndex: 20
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <preset.Text size="xs" fw={600} mb={8}>Delete this file?</preset.Text>
+                    <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
+                        <Button
+                            variant="danger"
+                            size="sm"
+                            fullWidth
+                            onClick={() => {
+                                onDeleteAsset(asset);
+                                onDeleteConfirmChange(null);
+                            }}
+                        >
+                            Yes
+                        </Button>
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            fullWidth
+                            onClick={() => onDeleteConfirmChange(null)}
+                        >
+                            No
+                        </Button>
+                    </div>
+                </div>
+            )}
         </Card>
     );
 };
@@ -332,6 +426,9 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
     onDragStart: onDragStartProp,
     onDragEnd: onDragEndProp,
     itemWrapper: ItemWrapper,
+    defaultViewMode = 'grid',
+    defaultItemVariant = 'default',
+    masonryColumns = 4,
 }) => {
     const {
         assets,
@@ -394,10 +491,10 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
     const [viewingAsset, setViewingAsset] = useState<MediaAsset | null>(null);
 
     // View Mode
-    const [viewMode, setViewMode] = useState<'grid' | 'list' | 'masonry'>('grid');
-    const [masonryGap, setMasonryGap] = useState(1);
+    const [viewMode, setViewMode] = useState<'grid' | 'list' | 'masonry'>(defaultViewMode);
+    const [masonryGap, setMasonryGap] = useState(8);
 
-    const { Button, TextInput, Select, Checkbox, Badge, Loader, FileButton, Skeleton, UploadCard, Modal, AIGenerateSidebar, PexelsImagePicker, FreepikContentPicker } = preset;
+    const { Button, TextInput, Select, Checkbox, Badge, Loader, FileButton, Skeleton, UploadCard, Modal, AIGenerateSidebar, PexelsImagePicker, FreepikContentPicker, Text: PresetText } = preset;
 
     // AI generation UI (optional)
     const [aiModalOpen, setAiModalOpen] = useState(false);
@@ -510,7 +607,7 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
     };
 
     return (
-        <div style={{ padding: '1rem' }}>
+        <div style={{ padding: '0.75rem' }}>
             {/* Header */}
             <div style={{ marginBottom: '1.5rem' }}>
                 <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#111827' }}>
@@ -522,7 +619,7 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
             </div>
 
             {/* Actions */}
-            <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div style={{ marginBottom: '1.25rem', display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
                 {!loading && filteredAssets.length > 0 && (
                     <Button
                         variant={isSelectMode ? 'primary' : 'outline'}
@@ -532,6 +629,7 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                             setSelectedIds(new Set());
                             setBulkDeleteConfirm(false);
                         }}
+                        leftIcon={renderIcon(isSelectMode ? icons?.x : icons?.check, 16)}
                     >
                         {isSelectMode ? 'Cancel' : 'Select'}
                     </Button>
@@ -543,6 +641,7 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                         size="sm"
                         onClick={() => setAiModalOpen(true)}
                         disabled={uploading || aiGenerating}
+                        leftIcon={renderIcon(icons?.photo, 16)}
                     >
                         Generate
                     </Button>
@@ -557,6 +656,7 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                             fetchPexelsImages();
                         }}
                         disabled={uploading}
+                        leftIcon={renderIcon(icons?.photo, 16)}
                     >
                         Pexels
                     </Button>
@@ -571,6 +671,7 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                             searchFreepikIcons();
                         }}
                         disabled={uploading}
+                        leftIcon={renderIcon(icons?.photo, 16)}
                     >
                         Freepik
                     </Button>
@@ -832,13 +933,13 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
             )}
 
             {/* Filters */}
-            <div style={{ marginBottom: '1.5rem', padding: '1rem', border: '1px solid #e5e7eb', borderRadius: '0.5rem', background: '#ffffff' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+            <div style={{ marginBottom: '1.5rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.75rem' }}>
                     <TextInput
                         value={searchQuery}
                         onChange={setSearchQuery}
                         placeholder="Search files..."
-                        leftIcon={renderIcon(icons?.search, 20)}
+                        leftIcon={renderIcon(icons?.search, 20, { stroke: 1.5 })}
                     />
                     <Select
                         value={typeFilter}
@@ -853,18 +954,20 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                             { value: 'other', label: 'Other' },
                         ]}
                     />
-                    <TextInput
-                        value={dateFrom}
-                        onChange={setDateFrom}
-                        type="date"
-                        placeholder="From date"
-                    />
-                    <TextInput
-                        value={dateTo}
-                        onChange={setDateTo}
-                        type="date"
-                        placeholder="To date"
-                    />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                        <TextInput
+                            value={dateFrom}
+                            onChange={setDateFrom}
+                            type="date"
+                            placeholder="From"
+                        />
+                        <TextInput
+                            value={dateTo}
+                            onChange={setDateTo}
+                            type="date"
+                            placeholder="To"
+                        />
+                    </div>
                 </div>
             </div>
 
@@ -890,24 +993,27 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                     size="sm"
                     onClick={() => setViewMode('grid')}
                     aria-label="Grid view"
+                    style={{ padding: '0 0.5rem', minWidth: '36px' }}
                 >
-                    {renderIcon(icons?.layoutGrid, 16, undefined, 'Grid')}
+                    {renderIcon(icons?.layoutGrid, 18, undefined, 'Grid')}
                 </Button>
                 <Button
                     variant={viewMode === 'list' ? 'primary' : 'secondary'}
                     size="sm"
                     onClick={() => setViewMode('list')}
                     aria-label="List view"
+                    style={{ padding: '0 0.5rem', minWidth: '36px' }}
                 >
-                    {renderIcon(icons?.list, 16, undefined, 'List')}
+                    {renderIcon(icons?.list, 18, undefined, 'List')}
                 </Button>
                 <Button
                     variant={viewMode === 'masonry' ? 'primary' : 'secondary'}
                     size="sm"
                     onClick={() => setViewMode('masonry')}
                     aria-label="Masonry view"
+                    style={{ padding: '0 0.5rem', minWidth: '36px' }}
                 >
-                    {renderIcon(icons?.columns, 16, undefined, 'Masonry')}
+                    {renderIcon(icons?.columns, 18, undefined, 'Masonry')}
                 </Button>
             </div>
 
@@ -928,13 +1034,13 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
             ) : (
                 <>
                     {viewMode === 'masonry' ? (
-                        <div style={{ columnCount: 4, columnGap: `${masonryGap}px`, padding: '0.5rem' }}>
+                        <div style={{ columnCount: masonryColumns, columnGap: `${masonryGap}px` }}>
                             <div style={{ breakInside: 'avoid', marginBottom: `${masonryGap}px` }}>
                                 <FileButton onSelect={uploadFiles} multiple disabled={uploading}>
                                     <UploadCard onClick={() => { }} isDragging={isDragging}>
                                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', padding: '1rem' }}>
                                             {renderIcon(icons?.upload, 24)}
-                                            <span>Upload</span>
+                                            <PresetText size="xs" fw={500}>Upload</PresetText>
                                         </div>
                                     </UploadCard>
                                 </FileButton>
@@ -944,48 +1050,32 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                                 const isSelected = selectedIds.has(asset.id!);
                                 const isItemDragging = draggingId === asset.id;
 
+                                const gridItem = (
+                                    <GridAssetItem
+                                        key={asset.id}
+                                        asset={asset}
+                                        preset={preset}
+                                        isSelected={isSelected}
+                                        isSelectMode={isSelectMode}
+                                        onToggleSelection={toggleSelection}
+                                        onAssetClick={handleAssetClick}
+                                        onDeleteAsset={deleteAsset}
+                                        renderTypeIcon={renderTypeIcon}
+                                        iconMap={iconMap}
+                                        icons={icons}
+                                        isDeleteConfirm={deleteConfirmId === asset.id}
+                                        onDeleteConfirmChange={setDeleteConfirmId}
+                                        draggable={draggable && !ItemWrapper}
+                                        isDragging={isItemDragging}
+                                        onDragStart={(e) => handleDragStart(asset, e)}
+                                        onDragEnd={(e) => handleDragEnd(asset, e)}
+                                        variant={defaultItemVariant === 'minimal' ? 'minimal' : (asset.fileType === 'image' ? 'minimal' : 'default')}
+                                    />
+                                );
+
                                 const masonryItem = (
                                     <div key={asset.id} style={{ breakInside: 'avoid', marginBottom: `${masonryGap}px` }}>
-                                        <div
-                                            onClick={() => handleAssetClick(asset)}
-                                            draggable={draggable && !ItemWrapper}
-                                            onDragStart={(e) => handleDragStart(asset, e)}
-                                            onDragEnd={(e) => handleDragEnd(asset, e)}
-                                            style={{
-                                                position: 'relative',
-                                                cursor: draggable ? (isItemDragging ? 'grabbing' : 'grab') : 'pointer',
-                                                border: isSelected ? '2px solid #3b82f6' : 'none',
-                                                borderRadius: 0,
-                                                overflow: 'hidden',
-                                                opacity: isItemDragging ? 0.4 : 1,
-                                                transition: 'opacity 0.15s ease-out',
-                                            }}
-                                        >
-                                            {isSelectMode && (
-                                                <div style={{ position: 'absolute', top: '0.5rem', left: '0.5rem', zIndex: 10 }}>
-                                                    <Checkbox
-                                                        checked={isSelected}
-                                                        onChange={() => toggleSelection(asset.id!)}
-                                                    />
-                                                </div>
-                                            )}
-
-                                            {asset.fileType === 'image' && asset.previewUrl ? (
-                                                <div style={{ width: '100%', height: 'auto', display: 'block', border: 'none', borderRadius: 0, overflow: 'hidden' }}>
-                                                    <img
-                                                        src={asset.previewUrl}
-                                                        alt={asset.fileName}
-                                                        loading="lazy"
-                                                        decoding="async"
-                                                        style={{ width: '100%', height: 'auto', display: 'block' }}
-                                                    />
-                                                </div>
-                                            ) : (
-                                                <div style={{ width: '100%', height: '160px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent' }}>
-                                                    {renderTypeIcon(iconMap[asset.fileType], 48)}
-                                                </div>
-                                            )}
-                                        </div>
+                                        {gridItem}
                                     </div>
                                 );
 
@@ -1145,21 +1235,21 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                             {/* Grid View (Default) */}
                             <FileButton onSelect={uploadFiles} multiple disabled={uploading}>
                                 <UploadCard onClick={() => { }} isDragging={isDragging}>
-                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-                                        {renderIcon(icons?.upload, 24, undefined, 'Upload')}
-                                        <span>Upload</span>
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', padding: '1rem' }}>
+                                        {renderIcon(icons?.upload, 24)}
+                                        <span style={{ fontSize: '0.875rem' }}>Upload</span>
                                     </div>
                                 </UploadCard>
                             </FileButton>
 
                             {isDragging && Array.from({ length: Math.max(1, draggedItemCount) }).map((_, i) => (
-                                <div key={`drag-skeleton-${i}`} style={{ aspectRatio: '1/1', width: '100%', height: '100%' }}>
+                                <div key={`drag-skeleton-${i}`} style={{ height: '160px' }}>
                                     <Skeleton className="w-full h-full" />
                                 </div>
                             ))}
 
                             {Array.from({ length: pendingUploads }).map((_, i) => (
-                                <div key={`skeleton-${i}`} style={{ aspectRatio: '1/1', width: '100%', height: '100%' }}>
+                                <div key={`skeleton-${i}`} style={{ height: '160px' }}>
                                     <Skeleton className="w-full h-full" />
                                 </div>
                             ))}
@@ -1177,12 +1267,14 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                                         onDeleteAsset={deleteAsset}
                                         renderTypeIcon={renderTypeIcon}
                                         iconMap={iconMap}
+                                        icons={icons}
                                         isDeleteConfirm={deleteConfirmId === asset.id}
                                         onDeleteConfirmChange={setDeleteConfirmId}
                                         draggable={draggable && !ItemWrapper}
                                         isDragging={draggingId === asset.id}
                                         onDragStart={(e) => handleDragStart(asset, e)}
                                         onDragEnd={(e) => handleDragEnd(asset, e)}
+                                        variant={defaultItemVariant}
                                     />
                                 );
 

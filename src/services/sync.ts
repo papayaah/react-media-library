@@ -95,6 +95,7 @@ export class MediaSyncService {
             const response = await fetch(`${this.config.apiBaseUrl}/api/media/assets`, {
                 method: 'POST',
                 body: formData,
+                credentials: 'include',
             });
 
             if (!response.ok) {
@@ -132,7 +133,9 @@ export class MediaSyncService {
         }
 
         try {
-            const response = await fetch(`${this.config.apiBaseUrl}/api/media/assets/${cloudId}`);
+            const response = await fetch(`${this.config.apiBaseUrl}/api/media/assets/${cloudId}`, {
+                credentials: 'include',
+            });
             if (!response.ok) {
                 return null;
             }
@@ -180,7 +183,9 @@ export class MediaSyncService {
                 ? `${this.config.apiBaseUrl}/api/media/assets/${asset.cloudId}`
                 : `${this.config.apiBaseUrl}/api/media/files/${asset.cloudUrl}`;
 
-            const response = await fetch(url);
+            const response = await fetch(url, {
+                credentials: 'include',
+            });
             if (!response.ok) {
                 throw new Error(`Download failed: ${response.statusText}`);
             }
@@ -204,6 +209,7 @@ export class MediaSyncService {
 
         const response = await fetch(`${this.config.apiBaseUrl}/api/media/assets/${cloudId}`, {
             method: 'DELETE',
+            credentials: 'include',
         });
 
         if (!response.ok) {
@@ -220,7 +226,7 @@ export class MediaSyncService {
         updateAsset: (asset: MediaAsset) => Promise<void>
     ): Promise<void> {
         const pending = await getPendingAssets();
-        
+
         for (const asset of pending) {
             if (asset.syncStatus === 'pending' || asset.syncStatus === 'error') {
                 const synced = await this.uploadAsset(asset);
@@ -253,7 +259,9 @@ export class MediaSyncService {
 
         try {
             // Fetch all assets from server
-            const response = await fetch(`${this.config.apiBaseUrl}/api/media/assets`);
+            const response = await fetch(`${this.config.apiBaseUrl}/api/media/assets`, {
+                credentials: 'include',
+            });
             if (!response.ok) {
                 throw new Error('Failed to fetch cloud assets');
             }

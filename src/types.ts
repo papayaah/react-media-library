@@ -149,11 +149,11 @@ export type MediaFreepikProvider = {
 export interface MediaAsset {
     // Local-only fields (for offline support)
     id?: number; // Local IndexedDB ID (temporary until synced)
-    
+
     // Cloud fields (synced) - optional, added for cross-device sync
     cloudId?: string; // UUID from backend (primary key in cloud)
     userId?: string; // User who owns this asset
-    
+
     // File storage
     handleName: string; // OPFS filename (local cache - authoritative for UX)
     cloudUrl?: string; // Server URL/path (if synced to server)
@@ -161,7 +161,7 @@ export interface MediaAsset {
     thumbnailHandleName?: string;
     thumbnailMimeType?: string;
     thumbnailSize?: number;
-    
+
     // Metadata
     fileName: string;
     fileType: MediaType;
@@ -170,17 +170,17 @@ export interface MediaAsset {
     /** For images, store intrinsic dimensions */
     width?: number;
     height?: number;
-    
+
     // Timestamps
     createdAt: number; // Local creation time
     updatedAt: number; // Last modification time
     syncedAt?: number; // Last successful sync timestamp
     cloudCreatedAt?: string; // ISO timestamp from backend
-    
+
     // Sync state
     syncStatus?: 'pending' | 'syncing' | 'synced' | 'error';
     syncError?: string;
-    
+
     // UI
     previewUrl?: string;
 }
@@ -220,6 +220,7 @@ export interface MediaGridIcons {
     undo?: IconComponent | ReactNode;
     hand?: IconComponent | ReactNode;
     cloud?: IconComponent | ReactNode;
+    dots?: IconComponent | ReactNode;
 }
 
 export interface MediaLibraryConfig {
@@ -284,6 +285,8 @@ export interface ButtonProps {
     fullWidth?: boolean;
     leftIcon?: ReactNode;
     className?: string;
+    style?: React.CSSProperties;
+    color?: string;
     'aria-label'?: string;
 }
 
@@ -317,6 +320,16 @@ export interface BadgeProps {
     children: ReactNode;
     variant?: 'default' | 'primary' | 'secondary';
     className?: string;
+}
+
+export interface TextProps {
+    children: ReactNode;
+    size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+    fw?: number | string;
+    c?: string;
+    mb?: number | string;
+    className?: string;
+    style?: React.CSSProperties;
 }
 
 export interface ImageProps {
@@ -369,6 +382,7 @@ export interface UploadCardProps {
     onClick: () => void;
     isDragging: boolean;
     className?: string;
+    style?: React.CSSProperties;
     children?: ReactNode;
 }
 
@@ -385,6 +399,7 @@ export interface ViewerThumbnailProps {
     alt: string;
     selected: boolean;
     onClick: () => void;
+    style?: React.CSSProperties;
 }
 
 export interface AIGenerateSidebarProps {
@@ -484,6 +499,7 @@ export interface ComponentPreset {
     UploadCard: React.FC<UploadCardProps>;
     Viewer: React.FC<ViewerProps>;
     ViewerThumbnail: React.FC<ViewerThumbnailProps>;
+    Text: React.FC<TextProps>;
     /** Optional: AI Generate Sidebar. If provided, renders as sidebar instead of modal. */
     AIGenerateSidebar?: React.FC<AIGenerateSidebarProps>;
     /** Optional: Pexels Image Picker. If provided, enables Pexels integration. */
