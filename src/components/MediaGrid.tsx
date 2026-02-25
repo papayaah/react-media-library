@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useMediaLibraryContext } from './MediaLibraryProvider';
-import { MediaAsset, ComponentPreset, MediaGridIcons, DragDropProps } from '../types';
+import { MediaAsset, ComponentPreset, MediaGridIcons, DragDropProps, LibraryAsset } from '../types';
 import { MediaViewer } from './MediaViewer';
 import { renderIcon } from '../utils/renderIcon';
 
@@ -10,6 +10,10 @@ interface MediaGridProps extends DragDropProps {
     preset: ComponentPreset;
     icons?: MediaGridIcons;
     onSelectionChange?: (selectedAssets: MediaAsset[]) => void;
+    /** Called when a curated library asset is clicked (for direct apply without import) */
+    onLibraryAssetSelect?: (asset: LibraryAsset) => void;
+    /** Called when drag starts on a curated library asset */
+    onLibraryDragStart?: (asset: LibraryAsset, event: React.DragEvent) => void;
     /** Default view mode (default: 'grid') */
     defaultViewMode?: 'grid' | 'list' | 'masonry';
     /** Default item variant (default: 'default') */
@@ -109,7 +113,6 @@ const GridAssetItem: React.FC<GridAssetItemProps> = ({
                 transition: 'opacity 0.15s ease-out',
                 cursor: draggable ? (isDragging ? 'grabbing' : 'grab') : 'pointer',
             }}
-            // @ts-expect-error - Card may not have drag props in type but DOM will accept them
             draggable={draggable}
             onDragStart={onDragStart}
             onDragEnd={onDragEnd}
@@ -422,6 +425,8 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
     preset,
     icons = {},
     onSelectionChange,
+    onLibraryAssetSelect: onLibraryAssetSelectProp,
+    onLibraryDragStart: onLibraryDragStartProp,
     draggable = false,
     onDragStart: onDragStartProp,
     onDragEnd: onDragEndProp,
@@ -468,6 +473,21 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
         selectAllFreepik,
         deselectAllFreepik,
         importFreepikContent,
+        // Library
+        libraryAvailable,
+        libraryCategories,
+        libraryAssets,
+        libraryLoading,
+        librarySelectedCategory,
+        librarySelected,
+        libraryImporting,
+        fetchLibraryCategories,
+        fetchLibraryAssets,
+        libraryBack,
+        toggleLibrarySelect,
+        selectAllLibrary,
+        deselectAllLibrary,
+        importLibraryAssets,
     } = useMediaLibraryContext();
 
     // Track which item is being dragged for animation
@@ -494,7 +514,7 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
     const [viewMode, setViewMode] = useState<'grid' | 'list' | 'masonry'>(defaultViewMode);
     const [masonryGap, setMasonryGap] = useState(8);
 
-    const { Button, TextInput, Select, Checkbox, Badge, Loader, FileButton, Skeleton, UploadCard, Modal, AIGenerateSidebar, PexelsImagePicker, FreepikContentPicker, Text: PresetText } = preset;
+    const { Button, TextInput, Select, Checkbox, Badge, Loader, FileButton, Skeleton, UploadCard, Modal, AIGenerateSidebar, PexelsImagePicker, FreepikContentPicker, LibraryAssetPicker, Text: PresetText } = preset;
 
     // AI generation UI (optional)
     const [aiModalOpen, setAiModalOpen] = useState(false);
@@ -504,6 +524,10 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
 
     // Freepik UI (optional)
     const [freepikModalOpen, setFreepikModalOpen] = useState(false);
+
+    // Library UI (optional)
+    const [libraryModalOpen, setLibraryModalOpen] = useState(false);
+    const [libraryInlineOpen, setLibraryInlineOpen] = useState(false);
     const [aiPrompt, setAiPrompt] = useState('');
     const [aiWidth, setAiWidth] = useState('768');
     const [aiHeight, setAiHeight] = useState('768');
@@ -618,8 +642,53 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                 </p>
             </div>
 
+            {/* Tab Switcher: Uploads / Library */}
+            {libraryAvailable && (
+                <div style={{ display: 'flex', marginBottom: '1rem', borderRadius: 8, overflow: 'hidden', border: '1px solid #dee2e6' }}>
+                    <button
+                        onClick={() => {
+                            setLibraryInlineOpen(false);
+                            deselectAllLibrary();
+                        }}
+                        style={{
+                            flex: 1,
+                            padding: '0.5rem 1rem',
+                            fontSize: '0.813rem',
+                            fontWeight: 600,
+                            border: 'none',
+                            cursor: 'pointer',
+                            background: !libraryInlineOpen ? '#7c3aed' : 'transparent',
+                            color: !libraryInlineOpen ? '#fff' : '#6b7280',
+                            transition: 'all 0.15s',
+                        }}
+                    >
+                        Uploads
+                    </button>
+                    <button
+                        onClick={() => {
+                            if (!libraryInlineOpen) fetchLibraryCategories();
+                            setLibraryInlineOpen(true);
+                        }}
+                        style={{
+                            flex: 1,
+                            padding: '0.5rem 1rem',
+                            fontSize: '0.813rem',
+                            fontWeight: 600,
+                            border: 'none',
+                            borderLeft: '1px solid #dee2e6',
+                            cursor: 'pointer',
+                            background: libraryInlineOpen ? '#7c3aed' : 'transparent',
+                            color: libraryInlineOpen ? '#fff' : '#6b7280',
+                            transition: 'all 0.15s',
+                        }}
+                    >
+                        Library
+                    </button>
+                </div>
+            )}
+
             {/* Actions */}
-            <div style={{ marginBottom: '1.25rem', display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            {!libraryInlineOpen && <div style={{ marginBottom: '1.25rem', display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
                 {!loading && filteredAssets.length > 0 && (
                     <Button
                         variant={isSelectMode ? 'primary' : 'outline'}
@@ -678,7 +747,7 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                 )}
 
                 {uploading && <Loader size="sm" />}
-            </div>
+            </div>}
 
             {aiAvailable && AIGenerateSidebar ? (
                 <AIGenerateSidebar
@@ -884,6 +953,36 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                     onOrderChange={setFreepikOrder}
                 />
             )}
+
+            {LibraryAssetPicker && libraryModalOpen && (
+                <LibraryAssetPicker
+                    isOpen={libraryModalOpen}
+                    onClose={() => {
+                        setLibraryModalOpen(false);
+                        deselectAllLibrary();
+                    }}
+                    categories={libraryCategories}
+                    assets={libraryAssets}
+                    loading={libraryLoading}
+                    selectedCategory={librarySelectedCategory}
+                    onCategorySelect={(categoryId) => {
+                        fetchLibraryAssets(categoryId);
+                    }}
+                    onBack={libraryBack}
+                    selected={librarySelected}
+                    onToggleSelect={toggleLibrarySelect}
+                    onSelectAll={selectAllLibrary}
+                    onDeselectAll={deselectAllLibrary}
+                    importing={libraryImporting}
+                    onImport={async () => {
+                        await importLibraryAssets();
+                        setLibraryModalOpen(false);
+                    }}
+                />
+            )}
+
+            {/* ===== Uploads Tab Content ===== */}
+            {!libraryInlineOpen && <>
 
             {/* Selection Bar */}
             {isSelectMode && filteredAssets.length > 0 && (
@@ -1305,6 +1404,156 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                 onSave={uploadFiles}
                 icons={icons}
             />
+
+            </>}
+            {/* ===== End Uploads Tab Content ===== */}
+
+            {/* ===== Library Tab Content ===== */}
+            {libraryAvailable && libraryInlineOpen && (
+                <div>
+                    {librarySelectedCategory && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                            <h2 style={{ fontSize: '1rem', fontWeight: '600', color: '#111827', margin: 0 }}>
+                                {libraryCategories.find((c) => c.id === librarySelectedCategory)?.name || 'Assets'}
+                            </h2>
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={libraryBack}
+                                leftIcon={'←'}
+                            >
+                                All Categories
+                            </Button>
+                        </div>
+                    )}
+
+                    {libraryLoading ? (
+                        <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
+                            <Loader size="sm" />
+                        </div>
+                    ) : !librarySelectedCategory ? (
+                        /* Category pills */
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            {libraryCategories.map((cat) => (
+                                <button
+                                    key={cat.id}
+                                    onClick={() => fetchLibraryAssets(cat.id)}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem',
+                                        padding: '0.5rem 0.75rem',
+                                        borderRadius: '0.5rem',
+                                        border: '1px solid #dee2e6',
+                                        background: '#fff',
+                                        cursor: 'pointer',
+                                        fontSize: '0.813rem',
+                                        fontWeight: 500,
+                                        color: '#374151',
+                                        transition: 'all 0.15s',
+                                    }}
+                                >
+                                    {cat.thumbnailUrl && (
+                                        <img
+                                            src={cat.thumbnailUrl}
+                                            alt=""
+                                            style={{
+                                                width: 28,
+                                                height: 28,
+                                                borderRadius: 4,
+                                                objectFit: 'cover',
+                                            }}
+                                        />
+                                    )}
+                                    <span>{cat.name}</span>
+                                </button>
+                            ))}
+                        </div>
+                    ) : (
+                        /* Asset grid */
+                        <>
+                            {libraryAssets.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
+                                    No assets in this category
+                                </div>
+                            ) : (
+                                <div
+                                    style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
+                                        gap: '0.5rem',
+                                    }}
+                                >
+                                    {libraryAssets.map((asset) => (
+                                        <div
+                                            key={asset.id}
+                                            draggable={draggable}
+                                            onDragStart={(e) => {
+                                                e.dataTransfer.setData('application/json', JSON.stringify({
+                                                    libraryAssetId: asset.id,
+                                                    name: asset.name,
+                                                    category: asset.category,
+                                                    thumbnailUrl: asset.thumbnailUrl,
+                                                    fullUrl: asset.fullUrl,
+                                                }));
+                                                if (asset.fullUrl) {
+                                                    e.dataTransfer.setData('text/uri-list', asset.fullUrl);
+                                                }
+                                                e.dataTransfer.setData('text/plain', asset.name);
+                                                e.dataTransfer.effectAllowed = 'copy';
+                                                onLibraryDragStartProp?.(asset, e);
+                                            }}
+                                            onClick={() => {
+                                                if (onLibraryAssetSelectProp) {
+                                                    onLibraryAssetSelectProp(asset);
+                                                }
+                                            }}
+                                            style={{
+                                                position: 'relative',
+                                                aspectRatio: '1',
+                                                borderRadius: 8,
+                                                overflow: 'hidden',
+                                                cursor: draggable ? 'grab' : 'pointer',
+                                                border: '1px solid #dee2e6',
+                                                transition: 'all 0.15s',
+                                            }}
+                                        >
+                                            <img
+                                                src={asset.thumbnailUrl}
+                                                alt={asset.name}
+                                                style={{
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    objectFit: 'cover',
+                                                }}
+                                            />
+                                            <div
+                                                style={{
+                                                    position: 'absolute',
+                                                    bottom: 0,
+                                                    left: 0,
+                                                    right: 0,
+                                                    padding: '4px 6px',
+                                                    background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)',
+                                                }}
+                                            >
+                                                <span style={{ fontSize: '0.688rem', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
+                                                    {asset.name}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Tip */}
+                            <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#9ca3af', textAlign: 'center' }}>
+                                Click an image to add it to your library and apply it
+                            </div>
+                        </>
+                    )}
+                </div>
+            )}
         </div>
     );
 };

@@ -30,6 +30,11 @@ export type {
     FreepikContent,
     MediaFreepikProvider,
     FreepikContentPickerProps,
+    // Library
+    LibraryAssetCategory,
+    LibraryAsset,
+    MediaLibraryAssetsProvider,
+    LibraryAssetPickerProps,
     MediaAsset,
     MediaType,
     MediaLibraryConfig,

@@ -10,12 +10,13 @@ import {
     addAssetToDB,
 } from '../services/storage';
 import { MediaSyncService } from '../services/sync';
-import { MediaAIGenerateRequest, MediaAIGenerator, MediaAsset, MediaPexelsProvider, PexelsImage, MediaFreepikProvider, FreepikContent, MediaSyncConfig } from '../types';
+import { MediaAIGenerateRequest, MediaAIGenerator, MediaAsset, MediaPexelsProvider, PexelsImage, MediaFreepikProvider, FreepikContent, MediaSyncConfig, MediaLibraryAssetsProvider, LibraryAssetCategory, LibraryAsset } from '../types';
 
 export const useMediaLibrary = (options?: {
     ai?: MediaAIGenerator;
     pexels?: MediaPexelsProvider;
     freepik?: MediaFreepikProvider;
+    library?: MediaLibraryAssetsProvider;
     sync?: MediaSyncConfig;
 }) => {
     const [assets, setAssets] = useState<MediaAsset[]>([]);
@@ -40,6 +41,14 @@ export const useMediaLibrary = (options?: {
     const [freepikImporting, setFreepikImporting] = useState(false);
     const [freepikSearchQuery, setFreepikSearchQuery] = useState('');
     const [freepikOrder, setFreepikOrder] = useState<'relevance' | 'popularity' | 'date'>('relevance');
+
+    // Library state
+    const [libraryCategories, setLibraryCategories] = useState<LibraryAssetCategory[]>([]);
+    const [libraryAssets, setLibraryAssets] = useState<LibraryAsset[]>([]);
+    const [libraryLoading, setLibraryLoading] = useState(false);
+    const [librarySelectedCategory, setLibrarySelectedCategory] = useState<string | null>(null);
+    const [librarySelected, setLibrarySelected] = useState<Set<string>>(new Set());
+    const [libraryImporting, setLibraryImporting] = useState(false);
 
     const assetsRef = useRef<MediaAsset[]>([]);
     const setAssetsTracked = useCallback((updater: MediaAsset[] | ((prev: MediaAsset[]) => MediaAsset[])) => {
@@ -229,30 +238,47 @@ export const useMediaLibrary = (options?: {
                     }
 
                     if (shouldTryPreview) {
-                        const file = asset.thumbnailHandleName
-                            ? await getFileFromOpfs(asset.thumbnailHandleName)
-                            : (asset.handleName ? await getFileFromOpfs(asset.handleName) : null);
+                        const thumbFile = asset.thumbnailHandleName ? await getFileFromOpfs(asset.thumbnailHandleName) : null;
+                        const mainFile = asset.handleName ? await getFileFromOpfs(asset.handleName) : null;
 
-                        if (file) {
-                            return { ...asset, previewUrl: URL.createObjectURL(file) };
-                        } else if (asset.cloudUrl) {
-                            // Fallback to cloud URL if local file is missing or hasn't been downloaded yet
-                            const previewUrl = asset.cloudUrl.startsWith('http') || asset.cloudUrl.startsWith('/')
-                                ? asset.cloudUrl
-                                : `${options?.sync?.apiBaseUrl || ''}/api/media/files/${asset.cloudUrl}`;
-                            return { ...asset, previewUrl };
+                        let previewUrl = asset.previewUrl;
+                        let fullUrl = asset.fullUrl;
+                        let thumbnailUrl = asset.thumbnailUrl;
+
+                        // 1. Handle local files (OPFS)
+                        if (thumbFile) {
+                            thumbnailUrl = URL.createObjectURL(thumbFile);
+                            previewUrl = thumbnailUrl; // Default preview to thumb for fast loading
                         }
+
+                        if (mainFile) {
+                            fullUrl = URL.createObjectURL(mainFile);
+                            if (!previewUrl) previewUrl = fullUrl; // Fallback if no thumb
+                        }
+
+                        // 2. Handle cloud fallbacks (Mirror)
+                        if (asset.cloudUrl) {
+                            const cloudBaseUrl = options?.sync?.apiBaseUrl || '';
+                            const cloudFileUrl = asset.cloudUrl.startsWith('http') || asset.cloudUrl.startsWith('/')
+                                ? asset.cloudUrl
+                                : `${cloudBaseUrl}/api/media/files/${asset.cloudUrl}`;
+
+                            if (!fullUrl) fullUrl = cloudFileUrl;
+                            if (!previewUrl) previewUrl = cloudFileUrl;
+                            if (!thumbnailUrl) thumbnailUrl = cloudFileUrl;
+                        }
+
+                        return { ...asset, previewUrl, fullUrl, thumbnailUrl };
                     }
                     return asset;
                 })
             );
 
             // Cleanup old blob: object URLs to avoid leaks when reloading list
-            // Only revoke actual blob URLs (not server URLs like /api/media/files/...)
             assetsRef.current.forEach((a) => {
-                if (a.previewUrl && a.previewUrl.startsWith('blob:')) {
-                    URL.revokeObjectURL(a.previewUrl);
-                }
+                if (a.previewUrl?.startsWith('blob:')) URL.revokeObjectURL(a.previewUrl);
+                if (a.fullUrl?.startsWith('blob:')) URL.revokeObjectURL(a.fullUrl);
+                if (a.thumbnailUrl?.startsWith('blob:')) URL.revokeObjectURL(a.thumbnailUrl);
             });
             setAssetsTracked(assetsWithPreviews);
         } catch (err) {
@@ -308,18 +334,26 @@ export const useMediaLibrary = (options?: {
                 const stored = await db.get('assets', id);
 
                 let previewUrl: string | undefined;
+                let fullUrl: string | undefined;
+                let thumbnailUrl: string | undefined;
+
                 const isMedia = stored?.fileType === 'image' || stored?.fileType === 'video';
                 if (isMedia || stored?.thumbnailHandleName) {
-                    const previewFile = stored?.thumbnailHandleName
-                        ? await getFileFromOpfs(stored.thumbnailHandleName)
-                        : stored?.handleName ? await getFileFromOpfs(stored.handleName) : null;
-                    if (previewFile) {
-                        previewUrl = URL.createObjectURL(previewFile);
+                    const thumbFile = stored?.thumbnailHandleName ? await getFileFromOpfs(stored.thumbnailHandleName) : null;
+                    const mainFile = stored?.handleName ? await getFileFromOpfs(stored.handleName) : null;
+
+                    if (thumbFile) {
+                        thumbnailUrl = URL.createObjectURL(thumbFile);
+                        previewUrl = thumbnailUrl;
+                    }
+                    if (mainFile) {
+                        fullUrl = URL.createObjectURL(mainFile);
+                        if (!previewUrl) previewUrl = fullUrl;
                     }
                 }
 
                 const newAsset = stored
-                    ? { ...stored, id, previewUrl }
+                    ? { ...stored, id, previewUrl, fullUrl, thumbnailUrl }
                     : ({
                         id,
                         handleName: '',
@@ -330,6 +364,8 @@ export const useMediaLibrary = (options?: {
                         createdAt: Date.now(),
                         updatedAt: Date.now(),
                         previewUrl,
+                        fullUrl,
+                        thumbnailUrl,
                     } as MediaAsset);
 
                 setAssetsTracked((prev) => [newAsset, ...prev]);
@@ -524,6 +560,144 @@ export const useMediaLibrary = (options?: {
         }
     }, [freepikSelected, freepikContent, options?.freepik, uploadFiles]);
 
+    // Library methods
+    const fetchLibraryCategories = useCallback(async () => {
+        const library = options?.library;
+        if (!library) return;
+        setLibraryLoading(true);
+        try {
+            const categories = await library.getCategories();
+            setLibraryCategories(categories);
+        } catch (err) {
+            setError('Failed to load library categories.');
+        } finally {
+            setLibraryLoading(false);
+        }
+    }, [options?.library]);
+
+    const fetchLibraryAssets = useCallback(async (categoryId: string) => {
+        const library = options?.library;
+        if (!library) return;
+        setLibraryLoading(true);
+        setLibrarySelectedCategory(categoryId);
+        try {
+            const result = await library.getAssets(categoryId);
+            setLibraryAssets(result);
+        } catch (err) {
+            setError('Failed to load library assets.');
+        } finally {
+            setLibraryLoading(false);
+        }
+    }, [options?.library]);
+
+    const libraryBack = useCallback(() => {
+        setLibrarySelectedCategory(null);
+        setLibraryAssets([]);
+        setLibrarySelected(new Set());
+    }, []);
+
+    const toggleLibrarySelect = useCallback((id: string) => {
+        setLibrarySelected((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) {
+                next.delete(id);
+            } else {
+                next.add(id);
+            }
+            return next;
+        });
+    }, []);
+
+    const selectAllLibrary = useCallback(() => {
+        setLibrarySelected(new Set(libraryAssets.map((a) => a.id)));
+    }, [libraryAssets]);
+
+    const deselectAllLibrary = useCallback(() => {
+        setLibrarySelected(new Set());
+    }, []);
+
+    // Import a single library asset and return the resulting MediaAsset (with numeric id).
+    // Used for click-to-apply: user clicks a library thumbnail → auto-import → apply to frame.
+    const importSingleLibraryAsset = useCallback(async (assetId: string): Promise<MediaAsset | null> => {
+        const library = options?.library;
+        if (!library) return null;
+        const asset = libraryAssets.find((a) => a.id === assetId);
+        if (!asset) return null;
+        try {
+            const file = await library.downloadAsset(asset);
+            const id = await importFileToLibrary(file);
+            const db = await initDB();
+            const stored = await db.get('assets', id);
+
+            let previewUrl: string | undefined;
+            let fullUrl: string | undefined;
+            let thumbnailUrl: string | undefined;
+
+            const isMedia = stored?.fileType === 'image' || stored?.fileType === 'video';
+            if (isMedia || stored?.thumbnailHandleName) {
+                const thumbFile = stored?.thumbnailHandleName ? await getFileFromOpfs(stored.thumbnailHandleName) : null;
+                const mainFile = stored?.handleName ? await getFileFromOpfs(stored.handleName) : null;
+                if (thumbFile) {
+                    thumbnailUrl = URL.createObjectURL(thumbFile);
+                    previewUrl = thumbnailUrl;
+                }
+                if (mainFile) {
+                    fullUrl = URL.createObjectURL(mainFile);
+                    if (!previewUrl) previewUrl = fullUrl;
+                }
+            }
+
+            const newAsset: MediaAsset = stored
+                ? { ...stored, id, previewUrl, fullUrl, thumbnailUrl }
+                : {
+                    id,
+                    handleName: '',
+                    fileName: file.name,
+                    fileType: 'image',
+                    mimeType: file.type,
+                    size: file.size,
+                    createdAt: Date.now(),
+                    updatedAt: Date.now(),
+                    previewUrl,
+                    fullUrl,
+                    thumbnailUrl,
+                } as MediaAsset;
+
+            setAssetsTracked((prev) => [newAsset, ...prev]);
+
+            // Background sync
+            if (syncServiceRef.current && options?.sync) {
+                syncAssetToServer(newAsset).catch(() => {});
+            }
+
+            return newAsset;
+        } catch {
+            return null;
+        }
+    }, [libraryAssets, options?.library, options?.sync, setAssetsTracked, syncAssetToServer]);
+
+    const importLibraryAssets = useCallback(async () => {
+        const library = options?.library;
+        if (librarySelected.size === 0 || !library) return;
+        setLibraryImporting(true);
+        try {
+            const files: File[] = [];
+            const ids = Array.from(librarySelected);
+            for (let i = 0; i < ids.length; i++) {
+                const asset = libraryAssets.find((a) => a.id === ids[i]);
+                if (!asset) continue;
+                const file = await library.downloadAsset(asset);
+                files.push(file);
+            }
+            await uploadFiles(files);
+            setLibrarySelected(new Set());
+        } catch (err) {
+            setError('Failed to import library assets.');
+        } finally {
+            setLibraryImporting(false);
+        }
+    }, [librarySelected, libraryAssets, options?.library, uploadFiles]);
+
     return {
         assets,
         loading,
@@ -560,6 +734,22 @@ export const useMediaLibrary = (options?: {
         selectAllFreepik,
         deselectAllFreepik,
         importFreepikContent,
+        // Library
+        libraryAvailable: Boolean(options?.library),
+        libraryCategories,
+        libraryAssets,
+        libraryLoading,
+        librarySelectedCategory,
+        librarySelected,
+        libraryImporting,
+        fetchLibraryCategories,
+        fetchLibraryAssets,
+        libraryBack,
+        toggleLibrarySelect,
+        selectAllLibrary,
+        deselectAllLibrary,
+        importLibraryAssets,
+        importSingleLibraryAsset,
         deleteAsset,
         refresh: loadAssets,
         // Sync

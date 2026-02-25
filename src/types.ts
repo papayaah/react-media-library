@@ -146,6 +146,31 @@ export type MediaFreepikProvider = {
     ) => Promise<File>;
 };
 
+// Curated Asset Library Types
+export type LibraryAssetCategory = {
+    id: string;
+    name: string;
+    description?: string;
+    thumbnailUrl?: string;
+};
+
+export type LibraryAsset = {
+    id: string;
+    name: string;
+    category: string;
+    thumbnailUrl: string;
+    fullUrl: string;
+    width?: number;
+    height?: number;
+    tags?: string[];
+};
+
+export type MediaLibraryAssetsProvider = {
+    getCategories: () => Promise<LibraryAssetCategory[]>;
+    getAssets: (categoryId: string) => Promise<LibraryAsset[]>;
+    downloadAsset: (asset: LibraryAsset) => Promise<File>;
+};
+
 export interface MediaAsset {
     // Local-only fields (for offline support)
     id?: number; // Local IndexedDB ID (temporary until synced)
@@ -182,7 +207,9 @@ export interface MediaAsset {
     syncError?: string;
 
     // UI
-    previewUrl?: string;
+    previewUrl?: string; // Standard preview (thumbnail if available)
+    fullUrl?: string; // Full resolution original image
+    thumbnailUrl?: string; // Explicit thumbnail URL
 }
 
 export type MediaType = 'image' | 'video' | 'audio' | 'document' | 'other';
@@ -273,6 +300,9 @@ export interface CardProps {
     selected?: boolean;
     className?: string;
     style?: React.CSSProperties;
+    draggable?: boolean;
+    onDragStart?: (e: React.DragEvent) => void;
+    onDragEnd?: (e: React.DragEvent) => void;
 }
 
 export interface ButtonProps {
@@ -463,6 +493,23 @@ export interface FreepikContentPickerProps {
     onOrderChange: (order: 'relevance' | 'popularity' | 'date') => void;
 }
 
+export interface LibraryAssetPickerProps {
+    isOpen: boolean;
+    onClose: () => void;
+    categories: LibraryAssetCategory[];
+    assets: LibraryAsset[];
+    loading: boolean;
+    selectedCategory: string | null;
+    onCategorySelect: (categoryId: string) => void;
+    onBack: () => void;
+    selected: Set<string>;
+    onToggleSelect: (id: string) => void;
+    onSelectAll: () => void;
+    onDeselectAll: () => void;
+    importing: boolean;
+    onImport: () => void;
+}
+
 // Drag & Drop Props - for MediaGrid and RecentMediaGrid
 export interface DragDropProps {
     /** Enable drag functionality on items */
@@ -506,6 +553,8 @@ export interface ComponentPreset {
     PexelsImagePicker?: React.FC<PexelsImagePickerProps>;
     /** Optional: Freepik Content Picker. If provided, enables Freepik integration. */
     FreepikContentPicker?: React.FC<FreepikContentPickerProps>;
+    /** Optional: Library Asset Picker. If provided, enables curated asset library integration. */
+    LibraryAssetPicker?: React.FC<LibraryAssetPickerProps>;
 }
 
 export interface QuickMediaPickerProps {

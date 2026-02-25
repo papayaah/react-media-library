@@ -127,7 +127,7 @@ export const MediaViewer: React.FC<MediaViewerProps> = ({
                     <div style={{ width: '100%', height: '100%' }}>
                         <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', background: '#000000', color: '#ffffff' }}>Loading editor...</div>}>
                             <ImageEditor
-                                src={currentAsset.previewUrl}
+                                src={currentAsset.fullUrl || currentAsset.previewUrl || ''}
                                 onSave={handleSaveCrop}
                                 onCancel={() => setIsEditing(false)}
                                 icons={icons}
@@ -136,17 +136,17 @@ export const MediaViewer: React.FC<MediaViewerProps> = ({
                     </div>
                 ) : (
                     <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {currentAsset.fileType === 'image' && currentAsset.previewUrl ? (
+                        {(currentAsset.fileType === 'image') && (currentAsset.fullUrl || currentAsset.previewUrl) ? (
                             <Image
-                                src={currentAsset.previewUrl}
+                                src={currentAsset.fullUrl || currentAsset.previewUrl || ''}
                                 alt={currentAsset.fileName}
                                 style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }}
                                 loading="eager"
                                 decoding="async"
                             />
-                        ) : currentAsset.fileType === 'video' && currentAsset.previewUrl ? (
+                        ) : (currentAsset.fileType === 'video') && (currentAsset.fullUrl || currentAsset.previewUrl) ? (
                             <video
-                                src={currentAsset.previewUrl}
+                                src={currentAsset.fullUrl || currentAsset.previewUrl || ''}
                                 controls
                                 autoPlay
                                 style={{ maxHeight: '100%', maxWidth: '100%', outline: 'none' }}
@@ -160,10 +160,10 @@ export const MediaViewer: React.FC<MediaViewerProps> = ({
             sidebar={
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '0.5rem', height: '100%', overflowY: 'auto' }}>
                     {assets.map((asset, index) => (
-                        asset.fileType === 'image' && asset.previewUrl ? (
+                        (asset.fileType === 'image' || asset.fileType === 'video') && (asset.thumbnailUrl || asset.previewUrl) ? (
                             <ViewerThumbnail
                                 key={asset.id}
-                                src={asset.previewUrl}
+                                src={asset.thumbnailUrl || asset.previewUrl || ''}
                                 alt={asset.fileName}
                                 selected={index === currentIndex}
                                 onClick={() => {

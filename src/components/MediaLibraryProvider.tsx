@@ -3,7 +3,7 @@
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useMediaLibrary } from '../hooks/useMediaLibrary';
 import { useMediaDragDrop } from '../hooks/useMediaDragDrop';
-import { MediaAIGenerateRequest, MediaAsset, MediaAIGenerator, MediaPexelsProvider, MediaFreepikProvider, FreepikContent, MediaSyncConfig } from '../types';
+import { MediaAIGenerateRequest, MediaAsset, MediaAIGenerator, MediaPexelsProvider, MediaFreepikProvider, FreepikContent, MediaSyncConfig, MediaLibraryAssetsProvider, LibraryAssetCategory, LibraryAsset } from '../types';
 
 interface MediaLibraryContextValue {
     assets: MediaAsset[];
@@ -40,6 +40,22 @@ interface MediaLibraryContextValue {
     selectAllFreepik: () => void;
     deselectAllFreepik: () => void;
     importFreepikContent: () => Promise<void>;
+    // Library
+    libraryAvailable: boolean;
+    libraryCategories: LibraryAssetCategory[];
+    libraryAssets: LibraryAsset[];
+    libraryLoading: boolean;
+    librarySelectedCategory: string | null;
+    librarySelected: Set<string>;
+    libraryImporting: boolean;
+    fetchLibraryCategories: () => Promise<void>;
+    fetchLibraryAssets: (categoryId: string) => Promise<void>;
+    libraryBack: () => void;
+    toggleLibrarySelect: (id: string) => void;
+    selectAllLibrary: () => void;
+    deselectAllLibrary: () => void;
+    importLibraryAssets: () => Promise<void>;
+    importSingleLibraryAsset: (assetId: string) => Promise<MediaAsset | null>;
     deleteAsset: (asset: MediaAsset) => Promise<void>;
     refresh: () => Promise<void>;
     isDragging: boolean;
@@ -63,6 +79,7 @@ export interface MediaLibraryProviderProps {
     ai?: MediaAIGenerator;
     pexels?: MediaPexelsProvider;
     freepik?: MediaFreepikProvider;
+    library?: MediaLibraryAssetsProvider;
     /**
      * Optional sync configuration for server-side media storage.
      * When provided, media will be automatically synced to server when user is authenticated.
@@ -76,9 +93,10 @@ export const MediaLibraryProvider: React.FC<MediaLibraryProviderProps> = ({
     ai,
     pexels,
     freepik,
+    library,
     sync,
 }) => {
-    const mediaLibrary = useMediaLibrary({ ai, pexels, freepik, sync });
+    const mediaLibrary = useMediaLibrary({ ai, pexels, freepik, library, sync });
     const { isDragging, draggedItemCount } = useMediaDragDrop(
         mediaLibrary.uploadFiles,
         !enableDragDrop || mediaLibrary.uploading

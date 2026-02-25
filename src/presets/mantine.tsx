@@ -20,15 +20,15 @@ import {
     SimpleGrid,
     Group,
 } from '@mantine/core';
-import { X, Image as PhotoIcon, Check } from 'lucide-react';
-import { ComponentPreset, CardProps, ButtonProps, TextInputProps, SelectProps, CheckboxProps, BadgeProps, ImageProps, ModalProps, LoaderProps, EmptyStateProps, FileButtonProps, GridProps, ViewerProps, ViewerThumbnailProps, PexelsImagePickerProps, FreepikContentPickerProps, AIGenerateSidebarProps } from '../types';
+import { X, Image as PhotoIcon, Check, ArrowLeft } from 'lucide-react';
+import { ComponentPreset, CardProps, ButtonProps, TextInputProps, SelectProps, CheckboxProps, BadgeProps, ImageProps, ModalProps, LoaderProps, EmptyStateProps, FileButtonProps, GridProps, ViewerProps, ViewerThumbnailProps, PexelsImagePickerProps, FreepikContentPickerProps, AIGenerateSidebarProps, LibraryAssetPickerProps } from '../types';
 
 /**
  * Mantine UI Component Preset
  * Full-featured preset using Mantine components
  */
 export const mantinePreset: ComponentPreset = {
-    Card: ({ children, onClick, selected, className, style }: CardProps) => (
+    Card: ({ children, onClick, selected, className, style, draggable, onDragStart, onDragEnd }: CardProps) => (
         <MantineCard
             shadow="sm"
             padding="lg"
@@ -36,8 +36,11 @@ export const mantinePreset: ComponentPreset = {
             withBorder
             onClick={onClick}
             className={className}
+            draggable={draggable}
+            onDragStart={onDragStart}
+            onDragEnd={onDragEnd}
             style={{
-                cursor: onClick ? 'pointer' : 'default',
+                cursor: draggable ? 'grab' : onClick ? 'pointer' : 'default',
                 borderColor: selected ? 'var(--mantine-color-blue-6)' : undefined,
                 borderWidth: selected ? 2 : 1,
                 transition: 'all 0.2s',
@@ -574,6 +577,212 @@ export const mantinePreset: ComponentPreset = {
             </Box>
         </MantineModal>
     ),
+    LibraryAssetPicker: ({
+        isOpen,
+        onClose,
+        categories,
+        assets,
+        loading,
+        selectedCategory,
+        onCategorySelect,
+        onBack,
+        selected,
+        onToggleSelect,
+        onSelectAll,
+        onDeselectAll,
+        importing,
+        onImport,
+    }: LibraryAssetPickerProps) => (
+        <MantineModal
+            opened={isOpen}
+            onClose={onClose}
+            title={
+                <Group gap="xs">
+                    {selectedCategory && (
+                        <UnstyledButton onClick={onBack} style={{ display: 'flex', alignItems: 'center' }}>
+                            <ArrowLeft size={20} />
+                        </UnstyledButton>
+                    )}
+                    <PhotoIcon size={20} />
+                    <Text fw={600}>
+                        {selectedCategory
+                            ? categories.find((c) => c.id === selectedCategory)?.name || 'Assets'
+                            : 'Asset Library'}
+                    </Text>
+                </Group>
+            }
+            size="lg"
+            styles={{
+                body: { padding: 0 },
+            }}
+        >
+            {!selectedCategory ? (
+                /* Category Grid */
+                <Box p="md" style={{ maxHeight: 500, overflowY: 'auto' }}>
+                    {loading ? (
+                        <Center p="xl">
+                            <MantineLoader size="sm" />
+                        </Center>
+                    ) : categories.length === 0 ? (
+                        <Center p="xl">
+                            <Text c="dimmed">No categories available</Text>
+                        </Center>
+                    ) : (
+                        <SimpleGrid cols={2} spacing="md">
+                            {categories.map((cat) => (
+                                <UnstyledButton
+                                    key={cat.id}
+                                    onClick={() => onCategorySelect(cat.id)}
+                                    style={{
+                                        borderRadius: 12,
+                                        overflow: 'hidden',
+                                        border: '1px solid #dee2e6',
+                                        transition: 'all 0.15s',
+                                    }}
+                                >
+                                    <Box
+                                        style={{
+                                            height: 120,
+                                            backgroundColor: '#f1f3f5',
+                                            backgroundImage: cat.thumbnailUrl ? `url(${cat.thumbnailUrl})` : undefined,
+                                            backgroundSize: 'cover',
+                                            backgroundPosition: 'center',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                        }}
+                                    >
+                                        {!cat.thumbnailUrl && <PhotoIcon size={32} color="#adb5bd" />}
+                                    </Box>
+                                    <Box p="sm">
+                                        <Text fw={600} size="sm">{cat.name}</Text>
+                                        {cat.description && (
+                                            <Text size="xs" c="dimmed" mt={2}>{cat.description}</Text>
+                                        )}
+                                    </Box>
+                                </UnstyledButton>
+                            ))}
+                        </SimpleGrid>
+                    )}
+                </Box>
+            ) : (
+                /* Asset Grid */
+                <>
+                    <Box p="md" style={{ borderBottom: '1px solid #e9ecef' }}>
+                        <Group justify="space-between">
+                            <Text size="sm" c="dimmed">
+                                {assets.length} assets available • {selected.size} selected
+                            </Text>
+                            <Group gap="xs">
+                                <MantineButton
+                                    variant="subtle"
+                                    size="xs"
+                                    onClick={selected.size === assets.length && assets.length > 0 ? onDeselectAll : onSelectAll}
+                                    disabled={assets.length === 0}
+                                >
+                                    {selected.size === assets.length && assets.length > 0 ? 'Deselect All' : 'Select All'}
+                                </MantineButton>
+                            </Group>
+                        </Group>
+                    </Box>
+
+                    <Box p="md" style={{ maxHeight: 400, overflowY: 'auto' }}>
+                        {loading ? (
+                            <Center p="xl">
+                                <MantineLoader size="sm" />
+                            </Center>
+                        ) : assets.length === 0 ? (
+                            <Center p="xl">
+                                <Text c="dimmed">No assets in this category</Text>
+                            </Center>
+                        ) : (
+                            <SimpleGrid cols={3} spacing="sm">
+                                {assets.map((asset) => (
+                                    <Box
+                                        key={asset.id}
+                                        style={{
+                                            position: 'relative',
+                                            aspectRatio: '1',
+                                            borderRadius: 8,
+                                            overflow: 'hidden',
+                                            cursor: 'pointer',
+                                            border: selected.has(asset.id) ? '3px solid #667eea' : '1px solid #dee2e6',
+                                            transition: 'all 0.15s',
+                                        }}
+                                        onClick={() => onToggleSelect(asset.id)}
+                                    >
+                                        <img
+                                            src={asset.thumbnailUrl}
+                                            alt={asset.name}
+                                            style={{
+                                                width: '100%',
+                                                height: '100%',
+                                                objectFit: 'cover',
+                                            }}
+                                        />
+                                        <MantineCheckbox
+                                            checked={selected.has(asset.id)}
+                                            onChange={() => onToggleSelect(asset.id)}
+                                            style={{
+                                                position: 'absolute',
+                                                top: 8,
+                                                left: 8,
+                                            }}
+                                            styles={{
+                                                input: {
+                                                    backgroundColor: selected.has(asset.id) ? '#667eea' : 'rgba(255,255,255,0.9)',
+                                                    borderColor: selected.has(asset.id) ? '#667eea' : '#dee2e6',
+                                                },
+                                            }}
+                                        />
+                                        <Box
+                                            style={{
+                                                position: 'absolute',
+                                                bottom: 0,
+                                                left: 0,
+                                                right: 0,
+                                                padding: 6,
+                                                background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)',
+                                            }}
+                                        >
+                                            <Text
+                                                size="xs"
+                                                c="white"
+                                                style={{
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    whiteSpace: 'nowrap',
+                                                }}
+                                            >
+                                                {asset.name}
+                                            </Text>
+                                        </Box>
+                                    </Box>
+                                ))}
+                            </SimpleGrid>
+                        )}
+                    </Box>
+
+                    <Box p="md" style={{ borderTop: '1px solid #e9ecef' }}>
+                        <Group justify="flex-end" gap="sm">
+                            <MantineButton variant="subtle" onClick={onClose}>
+                                Cancel
+                            </MantineButton>
+                            <MantineButton
+                                onClick={onImport}
+                                loading={importing}
+                                disabled={selected.size === 0}
+                                leftSection={<Check size={16} />}
+                            >
+                                Import {selected.size > 0 ? `(${selected.size})` : ''}
+                            </MantineButton>
+                        </Group>
+                    </Box>
+                </>
+            )}
+        </MantineModal>
+    ),
+
     AIGenerateSidebar: ({
         isOpen,
         onClose,
