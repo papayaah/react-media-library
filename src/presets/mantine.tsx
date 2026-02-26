@@ -19,9 +19,11 @@ import {
     UnstyledButton,
     SimpleGrid,
     Group,
+    Menu as MantineMenu,
 } from '@mantine/core';
 import { X, Image as PhotoIcon, Check, ArrowLeft } from 'lucide-react';
-import { ComponentPreset, CardProps, ButtonProps, TextInputProps, SelectProps, CheckboxProps, BadgeProps, ImageProps, ModalProps, LoaderProps, EmptyStateProps, FileButtonProps, GridProps, ViewerProps, ViewerThumbnailProps, PexelsImagePickerProps, FreepikContentPickerProps, AIGenerateSidebarProps, LibraryAssetPickerProps } from '../types';
+import { Fragment } from 'react';
+import { ComponentPreset, CardProps, ButtonProps, TextInputProps, SelectProps, CheckboxProps, BadgeProps, ImageProps, ModalProps, LoaderProps, EmptyStateProps, FileButtonProps, GridProps, ViewerProps, ViewerThumbnailProps, PexelsImagePickerProps, FreepikContentPickerProps, AIGenerateSidebarProps, LibraryAssetPickerProps, MenuProps } from '../types';
 
 /**
  * Mantine UI Component Preset
@@ -77,7 +79,7 @@ export const mantinePreset: ComponentPreset = {
         );
     },
 
-    TextInput: ({ value, onChange, placeholder, type, leftIcon, className }: TextInputProps) => (
+    TextInput: ({ value, onChange, placeholder, type, leftIcon, className, style }: TextInputProps) => (
         <MantineTextInput
             value={value}
             onChange={(e) => onChange(e.target.value)}
@@ -85,10 +87,11 @@ export const mantinePreset: ComponentPreset = {
             type={type}
             leftSection={leftIcon}
             className={className}
+            style={style}
         />
     ),
 
-    Select: ({ value, onChange, options, placeholder, label, 'aria-label': ariaLabel, className }: SelectProps) => (
+    Select: ({ value, onChange, options, placeholder, label, 'aria-label': ariaLabel, className, style }: SelectProps) => (
         <MantineSelect
             value={value}
             onChange={(val) => onChange(val || '')}
@@ -97,19 +100,21 @@ export const mantinePreset: ComponentPreset = {
             aria-label={!label ? (ariaLabel || placeholder) : undefined}
             data={options}
             className={className}
+            style={style}
         />
     ),
 
-    Checkbox: ({ checked, onChange, label, className }: CheckboxProps) => (
+    Checkbox: ({ checked, onChange, label, className, style }: CheckboxProps) => (
         <MantineCheckbox
             checked={checked}
             onChange={(e) => onChange(e.target.checked)}
             label={label}
             className={className}
+            style={style}
         />
     ),
 
-    Badge: ({ children, variant = 'default', className }: BadgeProps) => {
+    Badge: ({ children, variant = 'default', className, style }: BadgeProps) => {
         const variantMap = {
             default: 'light',
             primary: 'filled',
@@ -117,7 +122,7 @@ export const mantinePreset: ComponentPreset = {
         } as const;
 
         return (
-            <MantineBadge variant={variantMap[variant]} size="sm" className={className}>
+            <MantineBadge variant={variantMap[variant]} size="sm" className={className} style={style}>
                 {children}
             </MantineBadge>
         );
@@ -912,4 +917,29 @@ export const mantinePreset: ComponentPreset = {
             </Box>
         );
     },
+    Menu: ({ target, items, children, position = 'bottom-end', width = 160, className, style }: MenuProps) => (
+        <MantineMenu shadow="md" width={width} position={position as any} withinPortal>
+            <MantineMenu.Target>
+                {target}
+            </MantineMenu.Target>
+            <MantineMenu.Dropdown className={className} style={style}>
+                {items ? items.map((item) => (
+                    <Fragment key={item.id}>
+                        {item.divider && <MantineMenu.Divider />}
+                        <MantineMenu.Item
+                            leftSection={item.icon}
+                            onClick={(e: React.MouseEvent) => {
+                                e.stopPropagation();
+                                item.onClick?.();
+                            }}
+                            color={item.color}
+                            disabled={item.disabled}
+                        >
+                            {item.label}
+                        </MantineMenu.Item>
+                    </Fragment>
+                )) : children}
+            </MantineMenu.Dropdown>
+        </MantineMenu>
+    ),
 };

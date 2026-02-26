@@ -11,14 +11,14 @@ interface MediaLibraryDB extends DBSchema {
 
 const DEFAULT_DB_NAME = 'MediaLibrary';
 const DEFAULT_OPFS_DIR = 'media-library';
-const DEFAULT_THUMB_MAX_DIMENSION = 200;
+const DEFAULT_THUMB_MAX_DIMENSION = 400; // 2x original size for better Retina support without excessive bloat
 
 let dbPromise: Promise<IDBPDatabase<MediaLibraryDB>> | null = null;
 
 export const initDB = (dbName: string = DEFAULT_DB_NAME) => {
     if (!dbPromise) {
         dbPromise = openDB<MediaLibraryDB>(dbName, 4, {
-            upgrade(db, oldVersion, newVersion, transaction) {
+            upgrade(db, _oldVersion, _newVersion, transaction) {
                 let store;
                 if (!db.objectStoreNames.contains('assets')) {
                     store = db.createObjectStore('assets', {
@@ -107,7 +107,7 @@ const loadImageFromFile = (file: File) =>
     });
 
 // Check if the image has transparency by drawing it and checking alpha channel
-const hasTransparency = (img: HTMLImageElement, ctx: CanvasRenderingContext2D, w: number, h: number): boolean => {
+const hasTransparency = (_img: HTMLImageElement, ctx: CanvasRenderingContext2D, w: number, h: number): boolean => {
     try {
         const imageData = ctx.getImageData(0, 0, w, h);
         const data = imageData.data;
@@ -161,11 +161,11 @@ const toThumbnailBlob = async (
             quality = undefined; // PNG doesn't use quality parameter
         } else {
             mimeType = 'image/jpeg';
-            quality = 0.85;
+            quality = 0.9;
         }
     } else {
         mimeType = 'image/jpeg';
-        quality = 0.85;
+        quality = 0.9;
     }
 
     const blob = await new Promise<Blob | null>((resolve) => {

@@ -327,6 +327,7 @@ export interface TextInputProps {
     type?: string;
     leftIcon?: ReactNode;
     className?: string;
+    style?: React.CSSProperties;
 }
 
 export interface SelectProps {
@@ -337,6 +338,7 @@ export interface SelectProps {
     label?: string;
     'aria-label'?: string;
     className?: string;
+    style?: React.CSSProperties;
 }
 
 export interface CheckboxProps {
@@ -344,12 +346,14 @@ export interface CheckboxProps {
     onChange: (checked: boolean) => void;
     label?: string;
     className?: string;
+    style?: React.CSSProperties;
 }
 
 export interface BadgeProps {
     children: ReactNode;
     variant?: 'default' | 'primary' | 'secondary';
     className?: string;
+    style?: React.CSSProperties;
 }
 
 export interface TextProps {
@@ -429,6 +433,26 @@ export interface ViewerThumbnailProps {
     alt: string;
     selected: boolean;
     onClick: () => void;
+    style?: React.CSSProperties;
+}
+
+export interface MenuItem {
+    id: string;
+    label: ReactNode;
+    icon?: ReactNode;
+    onClick?: () => void;
+    color?: string;
+    disabled?: boolean;
+    divider?: boolean;
+}
+
+export interface MenuProps {
+    target: ReactNode;
+    items?: MenuItem[];
+    children?: ReactNode;
+    position?: string;
+    width?: number;
+    className?: string;
     style?: React.CSSProperties;
 }
 
@@ -555,6 +579,7 @@ export interface ComponentPreset {
     FreepikContentPicker?: React.FC<FreepikContentPickerProps>;
     /** Optional: Library Asset Picker. If provided, enables curated asset library integration. */
     LibraryAssetPicker?: React.FC<LibraryAssetPickerProps>;
+    Menu?: React.FC<MenuProps>;
 }
 
 export interface QuickMediaPickerProps {
