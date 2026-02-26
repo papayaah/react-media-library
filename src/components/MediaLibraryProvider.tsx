@@ -10,7 +10,7 @@ interface MediaLibraryContextValue {
     loading: boolean;
     uploading: boolean;
     error: string | null;
-    uploadFiles: (files: File[]) => Promise<void>;
+    uploadFiles: (files: File[] | FileList) => Promise<void>;
     aiAvailable: boolean;
     aiGenerating: boolean;
     aiError: string | null;

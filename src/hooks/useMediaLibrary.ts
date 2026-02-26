@@ -323,7 +323,8 @@ export const useMediaLibrary = (options?: {
         };
     }, [loadAssets, pullCloudAssets]);
 
-    const uploadFiles = useCallback(async (files: File[]) => {
+    const uploadFiles = useCallback(async (filesArg: File[] | FileList) => {
+        const files = filesArg instanceof FileList ? Array.from(filesArg) : filesArg;
         setUploading(true);
         setPendingUploads(files.length);
         setError(null);
@@ -667,7 +668,7 @@ export const useMediaLibrary = (options?: {
 
             // Background sync
             if (syncServiceRef.current && options?.sync) {
-                syncAssetToServer(newAsset).catch(() => {});
+                syncAssetToServer(newAsset).catch(() => { });
             }
 
             return newAsset;
