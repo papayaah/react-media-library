@@ -213,7 +213,7 @@ export interface MediaAsset {
     cloudCreatedAt?: string; // ISO timestamp from backend
 
     // Sync state
-    syncStatus?: 'pending' | 'syncing' | 'synced' | 'error';
+    syncStatus?: 'pending' | 'syncing' | 'synced' | 'error' | 'local-only';
     syncError?: string;
 
     // UI
@@ -268,8 +268,14 @@ export type StorageUsage = {
     used: number;
     /** Storage limit in bytes */
     limit: number;
+    /** Local safety cap in bytes */
+    localLimit?: number;
     /** Percentage of storage used (0-100) */
     percent: number;
+    /** Whether the cloud limit has been reached */
+    isCloudFull?: boolean;
+    /** Whether the local limit has been reached */
+    isLocalFull?: boolean;
 };
 
 export interface MediaLibraryConfig {
@@ -370,6 +376,9 @@ export interface MediaLibraryContextValue {
     importSingleLibraryAsset: (assetId: string) => Promise<MediaAsset | null>;
     deleteAsset: (asset: MediaAsset) => Promise<void>;
     refresh: () => Promise<void>;
+    // Sync
+    syncAvailable: boolean;
+    syncStatus: 'idle' | 'syncing' | 'synced' | 'error';
     // Filters and Search
     searchQuery: string;
     setSearchQuery: (query: string) => void;

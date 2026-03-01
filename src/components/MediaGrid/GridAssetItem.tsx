@@ -261,6 +261,32 @@ export const GridAssetItem: React.FC<GridAssetItemProps> = ({
                                     <Skeleton className="w-full h-full" />
                                 </div>
                             )}
+                            {/* Local-only indicator (Cloud quota exceeded) */}
+                            {asset.syncStatus === 'local-only' && (
+                                <div
+                                    title="Local Only - Cloud Storage Full"
+                                    style={{
+                                        position: 'absolute',
+                                        top: '0.375rem',
+                                        left: isSelected && isSelectMode ? '2.25rem' : '0.375rem',
+                                        zIndex: 12,
+                                        background: 'rgba(245, 158, 11, 0.95)',
+                                        color: 'white',
+                                        padding: '2px 6px',
+                                        borderRadius: '4px',
+                                        fontSize: '9px',
+                                        fontWeight: 800,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                        boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                                        transition: 'left 0.2s ease-out'
+                                    }}
+                                >
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
+                                    LOCAL ONLY
+                                </div>
+                            )}
                             {asset.fileType === 'video' || (asset.fileType === 'other' && asset.fileName?.toLowerCase().match(/\.(mp4|webm|mov|ogg)$/)) ? (
                                 <video
                                     src={resolvedUrl}

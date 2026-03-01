@@ -28,6 +28,8 @@ export interface MediaLibraryProviderProps {
     sync?: MediaSyncConfig;
     /** Optional storage limit in bytes. Defaults to 50MB. */
     storageLimit?: number;
+    /** Optional local storage safety cap in bytes. Defaults to 500MB. */
+    localLimit?: number;
 }
 
 export const MediaLibraryProvider: React.FC<MediaLibraryProviderProps> = ({
@@ -39,8 +41,9 @@ export const MediaLibraryProvider: React.FC<MediaLibraryProviderProps> = ({
     library,
     sync,
     storageLimit,
+    localLimit,
 }) => {
-    const mediaLibrary = useMediaLibrary({ ai, pexels, freepik, library, sync, storageLimit });
+    const mediaLibrary = useMediaLibrary({ ai, pexels, freepik, library, sync, storageLimit, localLimit });
     const { isDragging, draggedItemCount } = useMediaDragDrop(
         mediaLibrary.uploadFiles,
         !enableDragDrop || mediaLibrary.uploading

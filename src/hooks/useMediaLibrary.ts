@@ -18,8 +18,10 @@ export const useMediaLibrary = (options?: {
     freepik?: MediaFreepikProvider;
     library?: MediaLibraryAssetsProvider;
     sync?: MediaSyncConfig;
-    /** Optional storage limit in bytes. Defaults to 50MB. */
+    /** Optional cloud storage limit in bytes. Defaults to 50MB. */
     storageLimit?: number;
+    /** Optional local storage safety cap in bytes. Defaults to 500MB. */
+    localLimit?: number;
 }) => {
     const [assets, setAssets] = useState<MediaAsset[]>([]);
     const [loading, setLoading] = useState(true);
@@ -70,6 +72,7 @@ export const useMediaLibrary = (options?: {
     }, []);
 
     const storageLimit = options?.storageLimit || 50 * 1024 * 1024; // 50MB default
+    const localLimit = options?.localLimit || 500 * 1024 * 1024; // 500MB safety cap for OPFS
     const [totalUsed, setTotalUsed] = useState(0);
 
     // Update totalUsed whenever assets change
@@ -78,11 +81,24 @@ export const useMediaLibrary = (options?: {
         setTotalUsed(used);
     }, [assets]);
 
-    const storageUsage = useMemo((): StorageUsage => ({
-        used: totalUsed,
-        limit: storageLimit,
-        percent: Math.min(100, Math.round((totalUsed / storageLimit) * 100))
-    }), [totalUsed, storageLimit]);
+    const storageUsage = useMemo((): StorageUsage => {
+        const isCloudEnabled = Boolean(options?.sync);
+        const used = totalUsed;
+        const limit = storageLimit;
+
+        // If cloud is enabled, limit represents the cloud plan.
+        // We calculate percent based on cloud limit primarily.
+        const percent = Math.min(100, Math.round((used / limit) * 100));
+
+        return {
+            used,
+            limit,
+            localLimit,
+            percent,
+            isCloudFull: isCloudEnabled && used >= limit,
+            isLocalFull: used >= localLimit
+        };
+    }, [totalUsed, storageLimit, localLimit, options?.sync]);
 
     // Sync service instance (created once if sync config provided)
     const syncServiceRef = useRef<MediaSyncService | null>(null);
@@ -312,15 +328,18 @@ export const useMediaLibrary = (options?: {
         setPendingUploads(files.length);
         setError(null);
         try {
-            let currentTotal = assetsRef.current.reduce((acc, a) => acc + (a.size || 0) + (a.thumbnailSize || 0), 0);
-
             for (const file of files) {
-                // Pre-check size limit
-                if (currentTotal + file.size > storageLimit) {
-                    const limitMb = (storageLimit / (1024 * 1024)).toFixed(0);
-                    setError(`Storage limit reached (${limitMb}MB). Some files were not uploaded.`);
+                const totalAssetSize = file.size + (file.size * 0.1); // Estimate 10% for thumbnail
+                const isLoggedin = !!options?.sync;
+
+                // 1. HARD STOP: Check Local Limit (OPFS Safety Cap)
+                if (totalUsed + totalAssetSize > localLimit) {
+                    setError('Local storage is full. Please delete some files.');
                     break;
                 }
+
+                // 2. SOFT LIMIT: Check Cloud Limit (for logged in users)
+                const isOverCloudLimit = isLoggedin && (totalUsed + totalAssetSize > storageLimit);
 
                 const id = await importFileToLibrary(file);
                 const db = await initDB();
@@ -364,14 +383,23 @@ export const useMediaLibrary = (options?: {
                 setAssetsTracked((prev) => [newAsset, ...prev]);
                 setPendingUploads((prev) => Math.max(0, prev - 1));
 
-                // Update currentTotal to include new asset and its thumbnail
-                currentTotal += (newAsset.size || 0) + (newAsset.thumbnailSize || 0);
-
-                // Background sync to server (non-blocking)
+                // Background sync to server (only if within cloud quota)
                 if (syncServiceRef.current && options?.sync) {
-                    syncAssetToServer(newAsset).catch((err) => {
-                        console.error('[MediaLibrary] Background sync failed:', err);
-                    });
+                    if (!isOverCloudLimit) {
+                        syncAssetToServer(newAsset).catch((err) => {
+                            console.error('[MediaLibrary] Background sync failed:', err);
+                        });
+                    } else {
+                        // Mark as local-only because cloud quota exceeded
+                        await updateAssetInDB(newAsset.id!, {
+                            syncStatus: 'local-only',
+                            syncError: 'Cloud storage full'
+                        });
+                        // Update in-memory state
+                        setAssetsTracked((prev) =>
+                            prev.map((a) => (a.id === newAsset.id ? { ...a, syncStatus: 'local-only' } : a))
+                        );
+                    }
                 }
             }
         } catch (err) {
