@@ -218,75 +218,31 @@ export const useMediaLibrary = (options?: {
         try {
             await initDB();
             const storedAssets = await listAssetsFromDB();
-            // Reverse to show newest first
-            const reversedAssets = storedAssets.reverse();
+            // Create a fresh copy and reverse to show newest first
+            const reversedAssets = [...storedAssets].reverse();
 
-            // Generate preview URLs for images and anything with a thumbnail
-            const assetsWithPreviews = await Promise.all(
-                reversedAssets.map(async (asset) => {
-                    const hasThumbnail = !!asset.thumbnailHandleName;
-                    const isMedia = asset.fileType === 'image' || asset.fileType === 'video';
+            const cloudBaseUrl = options?.sync?.apiBaseUrl || '';
 
-                    // Fallback for incorrectly typed assets
-                    let shouldTryPreview = hasThumbnail || isMedia;
-                    if (!shouldTryPreview && asset.fileType === 'other' && asset.fileName) {
-                        const ext = asset.fileName.split('.').pop()?.toLowerCase();
-                        const mediaExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'avif', 'heic', 'heif', 'mp4', 'webm', 'mov'];
-                        if (ext && mediaExts.includes(ext)) {
-                            shouldTryPreview = true;
-                        }
-                    }
-
-                    if (shouldTryPreview) {
-                        const thumbFile = asset.thumbnailHandleName ? await getFileFromOpfs(asset.thumbnailHandleName) : null;
-                        const mainFile = asset.handleName ? await getFileFromOpfs(asset.handleName) : null;
-
-                        let previewUrl = asset.previewUrl;
-                        let fullUrl = asset.fullUrl;
-                        let thumbnailUrl = asset.thumbnailUrl;
-
-                        // 1. Handle local files (OPFS)
-                        if (thumbFile) {
-                            thumbnailUrl = URL.createObjectURL(thumbFile);
-                            previewUrl = thumbnailUrl; // Default preview to thumb for fast loading
-                        }
-
-                        if (mainFile) {
-                            fullUrl = URL.createObjectURL(mainFile);
-                            if (!previewUrl) previewUrl = fullUrl; // Fallback if no thumb
-                        }
-
-                        // 2. Handle cloud fallbacks (Mirror)
-                        if (asset.cloudUrl) {
-                            const cloudBaseUrl = options?.sync?.apiBaseUrl || '';
-                            const cloudFileUrl = asset.cloudUrl.startsWith('http') || asset.cloudUrl.startsWith('/')
-                                ? asset.cloudUrl
-                                : `${cloudBaseUrl}/api/media/files/${asset.cloudUrl}`;
-
-                            if (!fullUrl) fullUrl = cloudFileUrl;
-                            if (!previewUrl) previewUrl = cloudFileUrl;
-                            if (!thumbnailUrl) thumbnailUrl = cloudFileUrl;
-                        }
-
-                        return { ...asset, previewUrl, fullUrl, thumbnailUrl };
-                    }
-                    return asset;
-                })
-            );
-
-            // Cleanup old blob: object URLs to avoid leaks when reloading list
-            assetsRef.current.forEach((a) => {
-                if (a.previewUrl?.startsWith('blob:')) URL.revokeObjectURL(a.previewUrl);
-                if (a.fullUrl?.startsWith('blob:')) URL.revokeObjectURL(a.fullUrl);
-                if (a.thumbnailUrl?.startsWith('blob:')) URL.revokeObjectURL(a.thumbnailUrl);
+            // Phase 1: Show metadata immediately (with cloud fallbacks if available)
+            // This removes the long "skeleton" wait time.
+            const initialAssets = reversedAssets.map(asset => {
+                if (asset.cloudUrl) {
+                    const cloudFileUrl = asset.cloudUrl.startsWith('http') || asset.cloudUrl.startsWith('/')
+                        ? asset.cloudUrl
+                        : `${cloudBaseUrl}/api/media/files/${asset.cloudUrl}`;
+                    return { ...asset, previewUrl: cloudFileUrl, fullUrl: cloudFileUrl, thumbnailUrl: cloudFileUrl };
+                }
+                return asset;
             });
-            setAssetsTracked(assetsWithPreviews);
+            setAssetsTracked(initialAssets);
+            setLoading(false);
+
         } catch (err) {
+            console.error('[MediaLibrary] loadAssets error:', err);
             setError('Failed to load media library.');
-        } finally {
             setLoading(false);
         }
-    }, []);
+    }, [options?.sync?.apiBaseUrl, setAssetsTracked]);
 
     const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -315,6 +271,8 @@ export const useMediaLibrary = (options?: {
             window.removeEventListener('media-library-updated', handleUpdate);
             if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
             // Cleanup blob: object URLs only
+            // NOTE: useAssetPreview uses its own global cache, so we might need a better cleanup strategy
+            // for very long sessions, but this prevents leaks from old batching.
             assetsRef.current.forEach((asset) => {
                 if (asset.previewUrl && asset.previewUrl.startsWith('blob:')) {
                     URL.revokeObjectURL(asset.previewUrl);
@@ -484,9 +442,9 @@ export const useMediaLibrary = (options?: {
         try {
             const files: File[] = [];
             for (const url of Array.from(pexelsSelected)) {
-                const res = await fetch(url);
+                const res = await fetch(url as string);
                 const blob = await res.blob();
-                const fileName = url.split('/').pop() || 'image.jpg';
+                const fileName = (url as string).split('/').pop() || 'image.jpg';
                 const file = new File([blob], fileName, { type: blob.type });
                 files.push(file);
             }
@@ -680,7 +638,7 @@ export const useMediaLibrary = (options?: {
     const importLibraryAssets = useCallback(async () => {
         const library = options?.library;
         if (librarySelected.size === 0 || !library) return;
-        setLibraryImporting(true);
+        setLibraryLoading(true);
         try {
             const files: File[] = [];
             const ids = Array.from(librarySelected);
@@ -695,7 +653,7 @@ export const useMediaLibrary = (options?: {
         } catch (err) {
             setError('Failed to import library assets.');
         } finally {
-            setLibraryImporting(false);
+            setLibraryLoading(false);
         }
     }, [librarySelected, libraryAssets, options?.library, uploadFiles]);
 

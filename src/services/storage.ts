@@ -33,15 +33,28 @@ export const initDB = (dbName: string = DEFAULT_DB_NAME) => {
                     store.createIndex('by-date', 'createdAt');
                 }
             },
+        }).catch((error) => {
+            // Clear cached promise so the next call retries instead of returning
+            // a permanently failed promise (e.g. after user clears site data).
+            dbPromise = null;
+            throw error;
         });
     }
     return dbPromise;
 };
 
 // OPFS Helpers
+let opfsRoot: FileSystemDirectoryHandle | null = null;
+const opfsDirHandles: Record<string, FileSystemDirectoryHandle> = {};
+
 const getOpfsDirectory = async (directoryName: string) => {
-    const root = await navigator.storage.getDirectory();
-    return await root.getDirectoryHandle(directoryName, { create: true });
+    if (!opfsRoot) {
+        opfsRoot = await navigator.storage.getDirectory();
+    }
+    if (!opfsDirHandles[directoryName]) {
+        opfsDirHandles[directoryName] = await opfsRoot.getDirectoryHandle(directoryName, { create: true });
+    }
+    return opfsDirHandles[directoryName];
 };
 
 export const saveFileToOpfs = async (

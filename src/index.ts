@@ -63,6 +63,8 @@ export {
     getFileFromOpfs,
     deleteFileFromOpfs,
     addAssetToDB,
+    updateAssetInDB,
+    getAssetFromDB,
     listAssetsFromDB,
     deleteAssetFromDB,
     getAssetType,
