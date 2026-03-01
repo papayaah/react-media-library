@@ -309,4 +309,29 @@ export const defaultPreset: ComponentPreset = {
             <img src={src} alt={alt} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         </div>
     ),
+
+    Text: ({ children, size = 'md', fw, c, mb, className = '', style }: any) => {
+        const sizeMap = {
+            xs: '0.75rem',
+            sm: '0.875rem',
+            md: '1rem',
+            lg: '1.125rem',
+            xl: '1.25rem'
+        };
+
+        return (
+            <div
+                style={{
+                    fontSize: sizeMap[size as keyof typeof sizeMap] || sizeMap.md,
+                    fontWeight: fw as any,
+                    color: c,
+                    marginBottom: typeof mb === 'number' ? `${mb}px` : mb,
+                    ...style
+                }}
+                className={className}
+            >
+                {children}
+            </div>
+        );
+    },
 };

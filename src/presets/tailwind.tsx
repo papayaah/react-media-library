@@ -251,8 +251,15 @@ export const tailwindPreset: ComponentPreset = {
                 <div className="flex-1 relative flex items-center justify-center bg-gray-100 dark:bg-black/90 p-4">
                     {main}
                     {/* Actions Overlay */}
-                    <div className="absolute top-4 right-4 flex gap-2">
+                    <div className="absolute top-4 right-4 flex gap-2 items-center">
                         {actions}
+                        <button
+                            onClick={onClose}
+                            className="w-10 h-10 flex items-center justify-center rounded-full bg-black/10 hover:bg-black/20 text-gray-700 dark:text-white border-none cursor-pointer transition-colors"
+                            title="Close"
+                        >
+                            ×
+                        </button>
                     </div>
                 </div>
 
@@ -524,6 +531,30 @@ export const tailwindPreset: ComponentPreset = {
                         </button>
                     </div>
                 </div>
+            </div>
+        );
+    },
+
+    Text: ({ children, size = 'md', fw, c, mb, className = '', style }: any) => {
+        const sizeMap = {
+            xs: 'text-xs',
+            sm: 'text-sm',
+            md: 'text-base',
+            lg: 'text-lg',
+            xl: 'text-xl'
+        };
+
+        return (
+            <div
+                className={`${sizeMap[size as keyof typeof sizeMap] || sizeMap.md} ${className}`}
+                style={{
+                    fontWeight: fw as any,
+                    color: c,
+                    marginBottom: typeof mb === 'number' ? `${mb}px` : mb,
+                    ...style
+                }}
+            >
+                {children}
             </div>
         );
     },

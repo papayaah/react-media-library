@@ -117,7 +117,16 @@ export const MediaGridToolbar: React.FC<MediaGridToolbarProps> = ({
                     </div>
                     <div style={{ display: 'flex', background: '#f8fafc', padding: '2px', borderRadius: '8px', border: '1px solid #e2e8f0', width: 'fit-content' }}>
                         {[
-                            { id: 'all', label: 'All', icon: <rect width="18" height="18" x="3" y="3" rx="2" strokeWidth="2" /> },
+                            {
+                                id: 'all', label: 'All', icon: (
+                                    <g>
+                                        <rect width="7" height="7" x="3" y="3" rx="1" strokeWidth="2" />
+                                        <rect width="7" height="7" x="14" y="3" rx="1" strokeWidth="2" />
+                                        <rect width="7" height="7" x="3" y="14" rx="1" strokeWidth="2" />
+                                        <rect width="7" height="7" x="14" y="14" rx="1" strokeWidth="2" />
+                                    </g>
+                                )
+                            },
                             { id: 'horizontal', label: 'Landscape', icon: <rect width="20" height="12" x="2" y="6" rx="1.5" strokeWidth="2" /> },
                             { id: 'vertical', label: 'Portrait', icon: <rect width="12" height="20" x="6" y="2" rx="1.5" strokeWidth="2" /> },
                             { id: 'square', label: 'Square', icon: <rect width="16" height="16" x="4" y="4" rx="1" strokeWidth="2.5" /> }
