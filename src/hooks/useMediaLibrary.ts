@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
     initDB,
     listAssetsFromDB,
@@ -10,7 +10,7 @@ import {
     addAssetToDB,
 } from '../services/storage';
 import { MediaSyncService } from '../services/sync';
-import { MediaAIGenerateRequest, MediaAIGenerator, MediaAsset, MediaPexelsProvider, PexelsImage, MediaFreepikProvider, FreepikContent, MediaSyncConfig, MediaLibraryAssetsProvider, LibraryAssetCategory, LibraryAsset } from '../types';
+import { MediaAIGenerateRequest, MediaAIGenerator, MediaAsset, MediaPexelsProvider, PexelsImage, MediaFreepikProvider, FreepikContent, MediaSyncConfig, MediaLibraryAssetsProvider, LibraryAssetCategory, LibraryAsset, StorageUsage, MediaOrientation } from '../types';
 
 export const useMediaLibrary = (options?: {
     ai?: MediaAIGenerator;
@@ -18,6 +18,8 @@ export const useMediaLibrary = (options?: {
     freepik?: MediaFreepikProvider;
     library?: MediaLibraryAssetsProvider;
     sync?: MediaSyncConfig;
+    /** Optional storage limit in bytes. Defaults to 50MB. */
+    storageLimit?: number;
 }) => {
     const [assets, setAssets] = useState<MediaAsset[]>([]);
     const [loading, setLoading] = useState(true);
@@ -50,6 +52,14 @@ export const useMediaLibrary = (options?: {
     const [librarySelected, setLibrarySelected] = useState<Set<string>>(new Set());
     const [libraryImporting, setLibraryImporting] = useState(false);
 
+    // Filter and Search state
+    const [searchQuery, setSearchQuery] = useState('');
+    const [typeFilter, setTypeFilter] = useState('all');
+    const [colorFilter, setColorFilter] = useState('');
+    const [orientationFilter, setOrientationFilter] = useState<MediaOrientation>('all');
+    const [dateFrom, setDateFrom] = useState('');
+    const [dateTo, setDateTo] = useState('');
+
     const assetsRef = useRef<MediaAsset[]>([]);
     const setAssetsTracked = useCallback((updater: MediaAsset[] | ((prev: MediaAsset[]) => MediaAsset[])) => {
         setAssets((prev) => {
@@ -58,6 +68,21 @@ export const useMediaLibrary = (options?: {
             return next;
         });
     }, []);
+
+    const storageLimit = options?.storageLimit || 50 * 1024 * 1024; // 50MB default
+    const [totalUsed, setTotalUsed] = useState(0);
+
+    // Update totalUsed whenever assets change
+    useEffect(() => {
+        const used = assets.reduce((acc, asset) => acc + (asset.size || 0) + (asset.thumbnailSize || 0), 0);
+        setTotalUsed(used);
+    }, [assets]);
+
+    const storageUsage = useMemo((): StorageUsage => ({
+        used: totalUsed,
+        limit: storageLimit,
+        percent: Math.min(100, Math.round((totalUsed / storageLimit) * 100))
+    }), [totalUsed, storageLimit]);
 
     // Sync service instance (created once if sync config provided)
     const syncServiceRef = useRef<MediaSyncService | null>(null);
@@ -287,7 +312,16 @@ export const useMediaLibrary = (options?: {
         setPendingUploads(files.length);
         setError(null);
         try {
+            let currentTotal = assetsRef.current.reduce((acc, a) => acc + (a.size || 0) + (a.thumbnailSize || 0), 0);
+
             for (const file of files) {
+                // Pre-check size limit
+                if (currentTotal + file.size > storageLimit) {
+                    const limitMb = (storageLimit / (1024 * 1024)).toFixed(0);
+                    setError(`Storage limit reached (${limitMb}MB). Some files were not uploaded.`);
+                    break;
+                }
+
                 const id = await importFileToLibrary(file);
                 const db = await initDB();
                 const stored = await db.get('assets', id);
@@ -329,6 +363,9 @@ export const useMediaLibrary = (options?: {
 
                 setAssetsTracked((prev) => [newAsset, ...prev]);
                 setPendingUploads((prev) => Math.max(0, prev - 1));
+
+                // Update currentTotal to include new asset and its thumbnail
+                currentTotal += (newAsset.size || 0) + (newAsset.thumbnailSize || 0);
 
                 // Background sync to server (non-blocking)
                 if (syncServiceRef.current && options?.sync) {
@@ -406,7 +443,11 @@ export const useMediaLibrary = (options?: {
 
         setPexelsLoading(true);
         try {
-            const images = await pexels.fetchImages();
+            const images = await pexels.fetchImages({
+                query: searchQuery,
+                color: colorFilter,
+                orientation: orientationFilter !== 'all' ? orientationFilter : undefined
+            });
             setPexelsImages(images);
         } catch (err) {
             setError('Failed to load Pexels images.');
@@ -465,8 +506,10 @@ export const useMediaLibrary = (options?: {
         setFreepikLoading(true);
         try {
             const results = await freepik.searchIcons({
-                query: freepikSearchQuery || undefined,
+                query: freepikSearchQuery || searchQuery || undefined,
                 order: freepikOrder,
+                color: colorFilter,
+                orientation: orientationFilter !== 'all' ? orientationFilter : undefined
             });
             setFreepikContent(results);
         } catch (err) {
@@ -474,7 +517,7 @@ export const useMediaLibrary = (options?: {
         } finally {
             setFreepikLoading(false);
         }
-    }, [options?.freepik, freepikSearchQuery, freepikOrder]);
+    }, [options?.freepik, freepikSearchQuery, searchQuery, freepikOrder, colorFilter, orientationFilter]);
 
     const toggleFreepikSelect = useCallback((id: string) => {
         setFreepikSelected((prev) => {
@@ -582,8 +625,17 @@ export const useMediaLibrary = (options?: {
         if (!library) return null;
         const asset = libraryAssets.find((a) => a.id === assetId);
         if (!asset) return null;
+        setLibraryImporting(true);
         try {
             const file = await library.downloadAsset(asset);
+
+            let currentTotal = assetsRef.current.reduce((acc, a) => acc + (a.size || 0) + (a.thumbnailSize || 0), 0);
+            if (currentTotal + file.size > storageLimit) {
+                const limitMb = (storageLimit / (1024 * 1024)).toFixed(0);
+                setError(`Storage limit reached (${limitMb}MB). Could not import asset.`);
+                return null;
+            }
+
             const id = await importFileToLibrary(file);
             const db = await initDB();
             const stored = await db.get('assets', id);
@@ -632,13 +684,15 @@ export const useMediaLibrary = (options?: {
             return newAsset;
         } catch {
             return null;
+        } finally {
+            setLibraryImporting(false);
         }
     }, [libraryAssets, options?.library, options?.sync, setAssetsTracked, syncAssetToServer]);
 
     const importLibraryAssets = useCallback(async () => {
         const library = options?.library;
         if (librarySelected.size === 0 || !library) return;
-        setLibraryLoading(true);
+        setLibraryImporting(true);
         try {
             const files: File[] = [];
             const ids = Array.from(librarySelected);
@@ -653,7 +707,7 @@ export const useMediaLibrary = (options?: {
         } catch (err) {
             setError('Failed to import library assets.');
         } finally {
-            setLibraryLoading(false);
+            setLibraryImporting(false);
         }
     }, [librarySelected, libraryAssets, options?.library, uploadFiles]);
 
@@ -714,5 +768,19 @@ export const useMediaLibrary = (options?: {
         // Sync
         syncAvailable: Boolean(options?.sync),
         syncStatus,
+        storageUsage,
+        // Filters and Search
+        searchQuery,
+        setSearchQuery,
+        typeFilter,
+        setTypeFilter,
+        colorFilter,
+        setColorFilter,
+        orientationFilter,
+        setOrientationFilter,
+        dateFrom,
+        setDateFrom,
+        dateTo,
+        setDateTo,
     };
 };

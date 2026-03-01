@@ -3,65 +3,7 @@
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useMediaLibrary } from '../hooks/useMediaLibrary';
 import { useMediaDragDrop } from '../hooks/useMediaDragDrop';
-import { MediaAIGenerateRequest, MediaAsset, MediaAIGenerator, MediaPexelsProvider, MediaFreepikProvider, FreepikContent, MediaSyncConfig, MediaLibraryAssetsProvider, LibraryAssetCategory, LibraryAsset } from '../types';
-
-interface MediaLibraryContextValue {
-    assets: MediaAsset[];
-    loading: boolean;
-    uploading: boolean;
-    error: string | null;
-    uploadFiles: (files: File[] | FileList) => Promise<void>;
-    aiAvailable: boolean;
-    aiGenerating: boolean;
-    aiError: string | null;
-    generateImages: (req: MediaAIGenerateRequest) => Promise<void>;
-    pexelsAvailable: boolean;
-    pexelsImages: import('../types').PexelsImage[];
-    pexelsLoading: boolean;
-    pexelsSelected: Set<string>;
-    pexelsImporting: boolean;
-    fetchPexelsImages: () => Promise<void>;
-    togglePexelsSelect: (url: string) => void;
-    selectAllPexels: () => void;
-    deselectAllPexels: () => void;
-    importPexelsImages: () => Promise<void>;
-    // Freepik
-    freepikAvailable: boolean;
-    freepikContent: FreepikContent[];
-    freepikLoading: boolean;
-    freepikSelected: Set<string>;
-    freepikImporting: boolean;
-    freepikSearchQuery: string;
-    setFreepikSearchQuery: (query: string) => void;
-    freepikOrder: 'relevance' | 'popularity' | 'date';
-    setFreepikOrder: (order: 'relevance' | 'popularity' | 'date') => void;
-    searchFreepikIcons: () => Promise<void>;
-    toggleFreepikSelect: (id: string) => void;
-    selectAllFreepik: () => void;
-    deselectAllFreepik: () => void;
-    importFreepikContent: () => Promise<void>;
-    // Library
-    libraryAvailable: boolean;
-    libraryCategories: LibraryAssetCategory[];
-    libraryAssets: LibraryAsset[];
-    libraryLoading: boolean;
-    librarySelectedCategory: string | null;
-    librarySelected: Set<string>;
-    libraryImporting: boolean;
-    fetchLibraryCategories: () => Promise<void>;
-    fetchLibraryAssets: (categoryId: string) => Promise<void>;
-    libraryBack: () => void;
-    toggleLibrarySelect: (id: string) => void;
-    selectAllLibrary: () => void;
-    deselectAllLibrary: () => void;
-    importLibraryAssets: () => Promise<void>;
-    importSingleLibraryAsset: (assetId: string) => Promise<MediaAsset | null>;
-    deleteAsset: (asset: MediaAsset) => Promise<void>;
-    refresh: () => Promise<void>;
-    isDragging: boolean;
-    draggedItemCount: number;
-    pendingUploads: number;
-}
+import { MediaAIGenerator, MediaPexelsProvider, MediaFreepikProvider, MediaSyncConfig, MediaLibraryAssetsProvider, MediaLibraryContextValue } from '../types';
 
 const MediaLibraryContext = createContext<MediaLibraryContextValue | null>(null);
 
@@ -81,10 +23,11 @@ export interface MediaLibraryProviderProps {
     freepik?: MediaFreepikProvider;
     library?: MediaLibraryAssetsProvider;
     /**
-     * Optional sync configuration for server-side media storage.
-     * When provided, media will be automatically synced to server when user is authenticated.
-     */
+      * When provided, media will be automatically synced to server when user is authenticated.
+      */
     sync?: MediaSyncConfig;
+    /** Optional storage limit in bytes. Defaults to 50MB. */
+    storageLimit?: number;
 }
 
 export const MediaLibraryProvider: React.FC<MediaLibraryProviderProps> = ({
@@ -95,8 +38,9 @@ export const MediaLibraryProvider: React.FC<MediaLibraryProviderProps> = ({
     freepik,
     library,
     sync,
+    storageLimit,
 }) => {
-    const mediaLibrary = useMediaLibrary({ ai, pexels, freepik, library, sync });
+    const mediaLibrary = useMediaLibrary({ ai, pexels, freepik, library, sync, storageLimit });
     const { isDragging, draggedItemCount } = useMediaDragDrop(
         mediaLibrary.uploadFiles,
         !enableDragDrop || mediaLibrary.uploading

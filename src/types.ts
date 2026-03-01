@@ -38,7 +38,13 @@ export type PexelsImage = {
 };
 
 export type MediaPexelsProvider = {
-    fetchImages: () => Promise<PexelsImage[]>;
+    fetchImages: (options?: {
+        query?: string;
+        color?: string;
+        orientation?: MediaOrientation;
+        perPage?: number;
+        page?: number;
+    }) => Promise<PexelsImage[]>;
 };
 
 // Freepik API Response Types (matching actual API)
@@ -125,6 +131,8 @@ export type MediaFreepikProvider = {
         order?: 'relevance' | 'popularity' | 'date';
         page?: number;
         perPage?: number;
+        orientation?: MediaOrientation;
+        color?: string;
     }) => Promise<FreepikContent[]>;
 
     /** Search for photos/vectors/resources. Calls consumer's backend route. */
@@ -134,6 +142,8 @@ export type MediaFreepikProvider = {
         order?: string;
         page?: number;
         perPage?: number;
+        orientation?: MediaOrientation;
+        color?: string;
     }) => Promise<FreepikContent[]>;
 
     /** Download content. Calls consumer's backend route which returns a File. */
@@ -248,7 +258,19 @@ export interface MediaGridIcons {
     hand?: IconComponent | ReactNode;
     cloud?: IconComponent | ReactNode;
     dots?: IconComponent | ReactNode;
+    // Filter icons
+    palette?: IconComponent | ReactNode;
+    layers?: IconComponent | ReactNode;
 }
+
+export type StorageUsage = {
+    /** Total bytes used by all assets */
+    used: number;
+    /** Storage limit in bytes */
+    limit: number;
+    /** Percentage of storage used (0-100) */
+    percent: number;
+};
 
 export interface MediaLibraryConfig {
     dbName?: string;
@@ -291,6 +313,82 @@ export interface MediaSyncConfig {
      * Called when sync error occurs
      */
     onSyncError?: (error: Error) => void;
+}
+
+export type MediaOrientation = 'all' | 'horizontal' | 'vertical' | 'square';
+
+export interface MediaLibraryContextValue {
+    assets: MediaAsset[];
+    loading: boolean;
+    uploading: boolean;
+    error: string | null;
+    uploadFiles: (files: File[] | FileList) => Promise<void>;
+    aiAvailable: boolean;
+    aiGenerating: boolean;
+    aiError: string | null;
+    generateImages: (req: MediaAIGenerateRequest) => Promise<void>;
+    pexelsAvailable: boolean;
+    pexelsImages: PexelsImage[];
+    pexelsLoading: boolean;
+    pexelsSelected: Set<string>;
+    pexelsImporting: boolean;
+    fetchPexelsImages: () => Promise<void>;
+    togglePexelsSelect: (url: string) => void;
+    selectAllPexels: () => void;
+    deselectAllPexels: () => void;
+    importPexelsImages: () => Promise<void>;
+    // Freepik
+    freepikAvailable: boolean;
+    freepikContent: FreepikContent[];
+    freepikLoading: boolean;
+    freepikSelected: Set<string>;
+    freepikImporting: boolean;
+    freepikSearchQuery: string;
+    setFreepikSearchQuery: (query: string) => void;
+    freepikOrder: 'relevance' | 'popularity' | 'date';
+    setFreepikOrder: (order: 'relevance' | 'popularity' | 'date') => void;
+    searchFreepikIcons: () => Promise<void>;
+    toggleFreepikSelect: (id: string) => void;
+    selectAllFreepik: () => void;
+    deselectAllFreepik: () => void;
+    importFreepikContent: () => Promise<void>;
+    // Library
+    libraryAvailable: boolean;
+    libraryCategories: LibraryAssetCategory[];
+    libraryAssets: LibraryAsset[];
+    libraryLoading: boolean;
+    librarySelectedCategory: string | null;
+    librarySelected: Set<string>;
+    libraryImporting: boolean;
+    fetchLibraryCategories: () => Promise<void>;
+    fetchLibraryAssets: (categoryId: string) => Promise<void>;
+    libraryBack: () => void;
+    toggleLibrarySelect: (id: string) => void;
+    selectAllLibrary: () => void;
+    deselectAllLibrary: () => void;
+    importLibraryAssets: () => Promise<void>;
+    importSingleLibraryAsset: (assetId: string) => Promise<MediaAsset | null>;
+    deleteAsset: (asset: MediaAsset) => Promise<void>;
+    refresh: () => Promise<void>;
+    // Filters and Search
+    searchQuery: string;
+    setSearchQuery: (query: string) => void;
+    typeFilter: string;
+    setTypeFilter: (filter: string) => void;
+    colorFilter: string;
+    setColorFilter: (color: string) => void;
+    orientationFilter: MediaOrientation;
+    setOrientationFilter: (orientation: MediaOrientation) => void;
+    dateFrom: string;
+    setDateFrom: (date: string) => void;
+    dateTo: string;
+    setDateTo: (date: string) => void;
+    isDragging: boolean;
+    draggedItemCount: number;
+    pendingUploads: number;
+
+    /** Storage usage information */
+    storageUsage: StorageUsage;
 }
 
 // Component Preset Types

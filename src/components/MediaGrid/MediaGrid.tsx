@@ -49,14 +49,13 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
         librarySelectedCategory, librarySelected, libraryImporting,
         fetchLibraryCategories, fetchLibraryAssets, libraryBack,
         toggleLibrarySelect, selectAllLibrary, deselectAllLibrary, importLibraryAssets,
+        searchQuery, setSearchQuery, typeFilter, setTypeFilter,
+        colorFilter, setColorFilter, orientationFilter, setOrientationFilter,
+        dateFrom, setDateFrom, dateTo, setDateTo,
     } = context;
 
     // Local State
     const [draggingId, setDraggingId] = useState<number | null>(null);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [typeFilter, setTypeFilter] = useState<string>('all');
-    const [dateFrom, setDateFrom] = useState('');
-    const [dateTo, setDateTo] = useState('');
     const [isSelectMode, setIsSelectMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
@@ -89,9 +88,20 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
             const matchesFrom = fromTimestamp ? createdAt >= fromTimestamp : true;
             const matchesTo = toTimestamp ? createdAt <= toTimestamp : true;
 
-            return matchesType && matchesSearch && matchesFrom && matchesTo;
+            let matchesOrientation = true;
+            if (orientationFilter !== 'all' && (asset.fileType === 'image' || asset.fileType === 'video')) {
+                const width = asset.width || 0;
+                const height = asset.height || 0;
+                if (width > 0 && height > 0) {
+                    if (orientationFilter === 'horizontal') matchesOrientation = width > height;
+                    else if (orientationFilter === 'vertical') matchesOrientation = height > width;
+                    else if (orientationFilter === 'square') matchesOrientation = Math.abs(width - height) < (Math.max(width, height) * 0.05); // 5% tolerance
+                }
+            }
+
+            return matchesType && matchesSearch && matchesFrom && matchesTo && matchesOrientation;
         });
-    }, [assets, searchQuery, typeFilter, dateFrom, dateTo]);
+    }, [assets, searchQuery, typeFilter, dateFrom, dateTo, orientationFilter]);
 
     // Handlers
     const toggleSelection = (idArg: number | string) => {
@@ -180,13 +190,17 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                         typeFilter={typeFilter} setTypeFilter={setTypeFilter}
                         dateFrom={dateFrom} setDateFrom={setDateFrom}
                         dateTo={dateTo} setDateTo={setDateTo}
+                        colorFilter={colorFilter} setColorFilter={setColorFilter}
+                        orientationFilter={orientationFilter} setOrientationFilter={setOrientationFilter}
                         viewMode={viewMode} setViewMode={setViewMode}
                         aiAvailable={aiAvailable} aiGenerating={aiGenerating} setAiModalOpen={setAiModalOpen}
                         pexelsAvailable={pexelsAvailable} setPexelsModalOpen={setPexelsModalOpen} fetchPexelsImages={fetchPexelsImages}
                         freepikAvailable={freepikAvailable} setFreepikModalOpen={setFreepikModalOpen} searchFreepikIcons={searchFreepikIcons}
-                        uploadFiles={uploadFiles} handleSelectAll={handleSelectAll} handleDeselectAll={handleDeselectAll}
                         handleBulkDelete={handleBulkDelete} cancelBulkDelete={() => setBulkDeleteConfirm(false)}
                         filteredAssets={filteredAssets}
+                        uploadFiles={uploadFiles}
+                        handleSelectAll={handleSelectAll}
+                        handleDeselectAll={handleDeselectAll}
                     />
                     <div style={{ position: 'relative' }}>
                         {isGlobalDragging && (
@@ -202,11 +216,61 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                             draggingId={draggingId} handleDragStart={handleDragStart} handleDragEnd={handleDragEnd} itemWrapper={ItemWrapper} itemVariant={defaultItemVariant} iconMap={iconMap}
                         />
                     </div>
+
+                    {/* Storage Usage at the bottom */}
+                    <div style={{
+                        marginTop: '2.5rem',
+                        padding: '1rem',
+                        backgroundColor: '#f8fafc',
+                        borderRadius: '0.75rem',
+                        border: '1px solid #f1f5f9'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: context.storageUsage.percent > 90 ? '#ef4444' : '#7c3aed' }}></div>
+                                <span style={{ fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.025em' }}>Storage Usage</span>
+                            </div>
+                            <span style={{ fontSize: '11px', fontWeight: 800, color: context.storageUsage.percent > 90 ? '#ef4444' : '#7c3aed' }}>{context.storageUsage.percent}%</span>
+                        </div>
+                        <div style={{ height: '8px', backgroundColor: '#e2e8f0', borderRadius: '4px', overflow: 'hidden', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.05)' }}>
+                            <div style={{
+                                height: '100%',
+                                width: `${context.storageUsage.percent}%`,
+                                background: context.storageUsage.percent > 90
+                                    ? 'linear-gradient(90deg, #ef4444, #f87171)'
+                                    : 'linear-gradient(90deg, #7c3aed, #a78bfa)',
+                                transition: 'width 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                                borderRadius: '4px'
+                            }} />
+                        </div>
+                        <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 500 }}>
+                                {(() => {
+                                    const bytes = context.storageUsage.used;
+                                    if (bytes === 0) return '0 B';
+                                    const k = 1024;
+                                    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+                                    const i = Math.floor(Math.log(bytes) / Math.log(k));
+                                    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+                                })()} used
+                            </span>
+                            <span style={{ fontSize: '10px', color: '#94a3b8' }}>
+                                {(() => {
+                                    const bytes = context.storageUsage.limit;
+                                    if (bytes === 0) return '0 B';
+                                    const k = 1024;
+                                    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+                                    const i = Math.floor(Math.log(bytes) / Math.log(k));
+                                    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+                                })()} limit
+                            </span>
+                        </div>
+                    </div>
                 </>
             )}
 
             <MediaGridLibraryTab
-                preset={preset} libraryAvailable={libraryAvailable} libraryInlineOpen={libraryInlineOpen} librarySelectedCategory={librarySelectedCategory}
+                preset={preset} icons={icons} libraryAvailable={libraryAvailable} libraryInlineOpen={libraryInlineOpen} librarySelectedCategory={librarySelectedCategory}
                 libraryCategories={libraryCategories} libraryBack={libraryBack} libraryLoading={libraryLoading} fetchLibraryAssets={fetchLibraryAssets}
                 libraryAssets={libraryAssets} draggable={draggable} onLibraryDragStart={onLibraryDragStartProp!} onLibraryAssetSelect={onLibraryAssetSelectProp!}
             />

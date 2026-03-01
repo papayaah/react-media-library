@@ -27,6 +27,10 @@ interface MediaGridToolbarProps {
     setDateFrom: (date: string) => void;
     dateTo: string;
     setDateTo: (date: string) => void;
+    colorFilter: string;
+    setColorFilter: (color: string) => void;
+    orientationFilter: import('../../types').MediaOrientation;
+    setOrientationFilter: (orientation: import('../../types').MediaOrientation) => void;
 
     // View Mode
     viewMode: 'grid' | 'list' | 'masonry';
@@ -90,6 +94,10 @@ export const MediaGridToolbar: React.FC<MediaGridToolbarProps> = ({
     handleBulkDelete,
     cancelBulkDelete,
     filteredAssets,
+    colorFilter,
+    setColorFilter,
+    orientationFilter,
+    setOrientationFilter,
 }) => {
     const { Button, TextInput, Select, Loader, FileButton } = preset;
 
@@ -292,6 +300,70 @@ export const MediaGridToolbar: React.FC<MediaGridToolbarProps> = ({
                             placeholder="To"
                             className="media-filter-date"
                             style={{ fontSize: '12px' }}
+                        />
+                    </div>
+                </div>
+
+                {/* Canva-style Filters: Color and Orientation */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
+                    {/* Color Filter - Hidden for now
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            {renderIcon(icons?.palette, 16, { style: { color: '#6b7280' } })}
+                            <span style={{ fontSize: '11px', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Color</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#fff', border: '1px solid #dee2e6', borderRadius: '2rem', padding: '2px 8px 2px 4px', cursor: 'pointer' }}>
+                            <div
+                                style={{
+                                    width: '18px',
+                                    height: '18px',
+                                    borderRadius: '50%',
+                                    background: colorFilter || 'linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet)',
+                                    border: '1px solid #eee'
+                                }}
+                                onClick={() => {
+                                    // Toggle logic or open color picker - for now just clear if set
+                                    if (colorFilter) setColorFilter('');
+                                }}
+                            />
+                            <Select
+                                value={colorFilter}
+                                onChange={setColorFilter}
+                                options={[
+                                    { value: '', label: 'Any Color' },
+                                    { value: '#ef4444', label: 'Red' },
+                                    { value: '#f97316', label: 'Orange' },
+                                    { value: '#eab308', label: 'Yellow' },
+                                    { value: '#22c55e', label: 'Green' },
+                                    { value: '#3b82f6', label: 'Blue' },
+                                    { value: '#a855f7', label: 'Purple' },
+                                    { value: '#ec4899', label: 'Pink' },
+                                    { value: '#ffffff', label: 'White' },
+                                    { value: '#000000', label: 'Black' },
+                                    { value: '#71717a', label: 'Grey' },
+                                ]}
+                                style={{ border: 'none', background: 'transparent', padding: 0, fontSize: '12px', height: '24px', width: 'auto', minWidth: '80px' }}
+                            />
+                        </div>
+                    </div>
+                    */}
+
+                    {/* Orientation Filter */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            {renderIcon(icons?.layers, 16, { style: { color: '#6b7280' } })}
+                            <span style={{ fontSize: '11px', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Orientation</span>
+                        </div>
+                        <Select
+                            value={orientationFilter}
+                            onChange={(val) => setOrientationFilter(val as any)}
+                            options={[
+                                { value: 'all', label: 'All Orientations' },
+                                { value: 'horizontal', label: 'Horizontal' },
+                                { value: 'vertical', label: 'Vertical' },
+                                { value: 'square', label: 'Square' },
+                            ]}
+                            style={{ fontSize: '12px', height: '28px', borderRadius: '2rem', minWidth: '120px' }}
                         />
                     </div>
                 </div>
