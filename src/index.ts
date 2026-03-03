@@ -1,6 +1,8 @@
 // Hooks
 export { useMediaLibrary } from './hooks/useMediaLibrary';
 export { useMediaDragDrop } from './hooks/useMediaDragDrop';
+export { useAssetThumbnails } from './hooks/useAssetThumbnails';
+export type { AssetThumbnail } from './hooks/useAssetThumbnails';
 export { useTheme } from './hooks/useTheme';
 
 // Components
@@ -10,6 +12,8 @@ export type { MediaGridProps } from './components/MediaGrid';
 export { RecentMediaGrid } from './components/RecentMediaGrid';
 export type { RecentMediaGridProps } from './components/RecentMediaGrid';
 export { QuickMediaPicker } from './components/QuickMediaPicker';
+export { MediaAttachmentStrip } from './components/MediaAttachmentStrip';
+export type { MediaAttachmentStripProps } from './components/MediaAttachmentStrip';
 
 // Presets
 export { tailwindPreset, lucideIcons } from './presets';

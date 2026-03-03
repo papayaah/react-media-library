@@ -333,7 +333,7 @@ export const getAssetType = (mimeType: string, fileName?: string): MediaType => 
             const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'avif', 'heic', 'heif'];
             const videoExts = ['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv'];
             const audioExts = ['mp3', 'wav', 'ogg', 'm4a', 'flac'];
-            const docExts = ['pdf', 'doc', 'docx', 'txt', 'rtf', 'odt'];
+            const docExts = ['pdf', 'doc', 'docx', 'txt', 'rtf', 'odt', 'csv', 'tsv', 'tlg'];
 
             if (imageExts.includes(ext)) return 'image';
             if (videoExts.includes(ext)) return 'video';
