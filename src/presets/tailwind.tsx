@@ -1,3 +1,4 @@
+import { Portal } from '../components/Portal';
 import { ComponentPreset, CardProps, ButtonProps, TextInputProps, SelectProps, CheckboxProps, BadgeProps, ImageProps, ModalProps, LoaderProps, EmptyStateProps, FileButtonProps, GridProps, ViewerProps, ViewerThumbnailProps, PexelsImagePickerProps, FreepikContentPickerProps } from '../types';
 
 /**
@@ -142,7 +143,7 @@ export const tailwindPreset: ComponentPreset = {
             decoding={decoding || 'async'}
             onLoad={onLoad}
             style={style}
-            className={`w-full h-full object-cover ${className}`}
+            className={`${!style?.width ? 'w-full' : ''} ${!style?.height ? 'h-full' : ''} ${!style?.objectFit ? 'object-cover' : ''} ${className}`}
         />
     ),
 
@@ -150,21 +151,33 @@ export const tailwindPreset: ComponentPreset = {
         if (!isOpen) return null;
 
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center">
-                <div className="absolute inset-0 bg-black bg-opacity-50" onClick={onClose} />
-                <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-auto">
-                    <div className="flex items-center justify-between p-4 border-b">
-                        <h3 className="text-lg font-semibold">{title}</h3>
-                        <button
-                            onClick={onClose}
-                            className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
-                        >
-                            ×
-                        </button>
+            <Portal>
+                <div
+                    className="fixed inset-0 z-[9999] flex items-center justify-center"
+                    style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                    <div
+                        className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"
+                        onClick={onClose}
+                        style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
+                    />
+                    <div
+                        className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-auto"
+                        style={{ position: 'relative', maxWidth: '42rem', width: '100%', maxHeight: '90vh', overflow: 'auto', borderRadius: '0.5rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}
+                    >
+                        <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{title}</h3>
+                            <button
+                                onClick={onClose}
+                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-2xl leading-none"
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <div className="p-4">{children}</div>
                     </div>
-                    <div className="p-4">{children}</div>
                 </div>
-            </div>
+            </Portal>
         );
     },
 
@@ -246,33 +259,41 @@ export const tailwindPreset: ComponentPreset = {
     Viewer: ({ isOpen, onClose, main, sidebar, actions }: ViewerProps) => {
         if (!isOpen) return null;
         return (
-            <div className="fixed inset-0 z-50 bg-white dark:bg-black flex">
-                {/* Main Content Area */}
-                <div className="flex-1 relative flex items-center justify-center bg-gray-100 dark:bg-black/90 p-4">
-                    {main}
-                    {/* Actions Overlay */}
-                    <div className="absolute top-4 right-4 flex gap-2 items-center">
-                        {actions}
-                        <button
-                            onClick={onClose}
-                            className="w-10 h-10 flex items-center justify-center rounded-full bg-black/10 hover:bg-black/20 text-gray-700 dark:text-white border-none cursor-pointer transition-colors"
-                            title="Close"
-                        >
-                            ×
-                        </button>
+            <Portal>
+                <div
+                    className="fixed inset-0 z-[9999] bg-white dark:bg-black flex"
+                    style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', backgroundColor: '#000000' }}
+                >
+                    {/* Main Content Area */}
+                    <div className="flex-1 relative bg-gray-100 dark:bg-black overflow-hidden">
+                        {main}
+                        {/* Actions Overlay */}
+                        <div className="absolute top-4 right-4 flex gap-2 items-center z-[10000]">
+                            {actions}
+                            <button
+                                onClick={onClose}
+                                className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/10 cursor-pointer transition-colors backdrop-blur-md"
+                                title="Close"
+                            >
+                                ×
+                            </button>
+                        </div>
                     </div>
-                </div>
 
-                {/* Sidebar */}
-                <div className="w-64 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 flex flex-col overflow-hidden">
-                    <div className="p-4 border-b border-gray-200 dark:border-gray-800">
-                        <h3 className="text-gray-900 dark:text-white font-medium text-sm">Library</h3>
-                    </div>
-                    <div className="flex-1 overflow-y-auto p-2">
-                        {sidebar}
+                    {/* Sidebar */}
+                    <div
+                        className="w-64 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 flex flex-col overflow-hidden"
+                        style={{ width: '16rem', borderLeft: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column' }}
+                    >
+                        <div className="p-4 border-b border-gray-200 dark:border-gray-800">
+                            <h3 className="text-gray-900 dark:text-white font-medium text-sm">Library</h3>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-2">
+                            {sidebar}
+                        </div>
                     </div>
                 </div>
-            </div>
+            </Portal>
         );
     },
 
@@ -280,7 +301,7 @@ export const tailwindPreset: ComponentPreset = {
         <div
             onClick={onClick}
             className={`
-                aspect-square rounded-md overflow-hidden cursor-pointer border-2 transition-all bg-gray-100 dark:bg-gray-800
+                shrink-0 aspect-square rounded-md overflow-hidden cursor-pointer border-2 transition-all bg-gray-100 dark:bg-gray-800
                 ${selected ? 'border-blue-500 opacity-100' : 'border-transparent opacity-60 hover:opacity-100'}
             `}
         >
@@ -289,7 +310,7 @@ export const tailwindPreset: ComponentPreset = {
                 alt={alt}
                 loading="lazy"
                 decoding="async"
-                className="w-full h-full object-contain"
+                className="w-full h-full object-cover"
             />
         </div>
     ),

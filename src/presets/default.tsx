@@ -1,4 +1,5 @@
 import React from 'react';
+import { Portal } from '../components/Portal';
 import { ComponentPreset, CardProps, ButtonProps, TextInputProps, SelectProps, CheckboxProps, BadgeProps, ImageProps, ModalProps, LoaderProps, EmptyStateProps, FileButtonProps, GridProps, ViewerProps, ViewerThumbnailProps } from '../types';
 
 /**
@@ -147,13 +148,13 @@ export const defaultPreset: ComponentPreset = {
         );
     },
 
-    Image: ({ src, alt, className = '', loading, onLoad }: ImageProps) => (
+    Image: ({ src, alt, className = '', loading, onLoad, style }: ImageProps) => (
         <img
             src={src}
             alt={alt}
             loading={loading || 'lazy'}
             onLoad={onLoad}
-            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+            style={{ width: '100%', height: '100%', objectFit: 'contain', ...style }}
             className={className}
         />
     ),
@@ -161,23 +162,25 @@ export const defaultPreset: ComponentPreset = {
     Modal: ({ isOpen, onClose, title, children }: ModalProps) => {
         if (!isOpen) return null;
         return (
-            <div style={{
-                position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                backgroundColor: 'rgba(0, 0, 0, 0.5)'
-            }}>
-                <div style={{ position: 'absolute', inset: 0 }} onClick={onClose} />
+            <Portal>
                 <div style={{
-                    position: 'relative', backgroundColor: '#ffffff', borderRadius: '0.5rem',
-                    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
-                    maxWidth: '42rem', width: '100%', margin: '1rem', maxHeight: '90vh', overflow: 'auto'
+                    position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)', backdropFilter: 'blur(4px)'
                 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', borderBottom: '1px solid #e5e7eb' }}>
-                        <h3 style={{ fontSize: '1.125rem', fontWeight: 600 }}>{title}</h3>
-                        <button onClick={onClose} style={{ fontSize: '1.5rem', lineHeight: 1, background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af' }}>×</button>
+                    <div style={{ position: 'absolute', inset: 0 }} onClick={onClose} />
+                    <div style={{
+                        position: 'relative', backgroundColor: '#ffffff', borderRadius: '0.5rem',
+                        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+                        maxWidth: '42rem', width: '100%', margin: '1rem', maxHeight: '90vh', overflow: 'auto'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', borderBottom: '1px solid #e5e7eb' }}>
+                            <h3 style={{ fontSize: '1.125rem', fontWeight: 600 }}>{title}</h3>
+                            <button onClick={onClose} style={{ fontSize: '1.5rem', lineHeight: 1, background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af' }}>×</button>
+                        </div>
+                        <div style={{ padding: '1rem' }}>{children}</div>
                     </div>
-                    <div style={{ padding: '1rem' }}>{children}</div>
                 </div>
-            </div>
+            </Portal>
         );
     },
 
@@ -264,32 +267,35 @@ export const defaultPreset: ComponentPreset = {
     Viewer: ({ isOpen, onClose, main, sidebar, actions }: ViewerProps) => {
         if (!isOpen) return null;
         return (
-            <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', backgroundColor: '#ffffff' }}>
-                <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f3f4f6' }}>
-                    {main}
-                    <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', gap: '0.5rem' }}>
-                        {actions}
-                        <button
-                            onClick={onClose}
-                            style={{
-                                width: '2rem', height: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.1)', border: 'none', cursor: 'pointer'
-                            }}
-                            title="Close"
-                        >
-                            ×
-                        </button>
+            <Portal>
+                <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', backgroundColor: '#000000' }}>
+                    <div style={{ flex: 1, position: 'relative', overflow: 'hidden', backgroundColor: '#000000' }}>
+                        {main}
+                        <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', gap: '0.5rem', zIndex: 10000 }}>
+                            {actions}
+                            <button
+                                onClick={onClose}
+                                style={{
+                                    width: '2.5rem', height: '2.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer',
+                                    color: '#ffffff', fontSize: '1.5rem', backdropFilter: 'blur(8px)'
+                                }}
+                                title="Close"
+                            >
+                                ×
+                            </button>
+                        </div>
+                    </div>
+                    <div style={{ width: '16rem', borderLeft: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', backgroundColor: '#111111', color: '#ffffff' }}>
+                        <div style={{ padding: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                            <h3 style={{ fontSize: '0.875rem', fontWeight: 500 }}>Library</h3>
+                        </div>
+                        <div style={{ flex: 1, overflowY: 'auto', padding: '0.5rem' }}>
+                            {sidebar}
+                        </div>
                     </div>
                 </div>
-                <div style={{ width: '16rem', borderLeft: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', backgroundColor: '#ffffff' }}>
-                    <div style={{ padding: '1rem', borderBottom: '1px solid #e5e7eb' }}>
-                        <h3 style={{ fontSize: '0.875rem', fontWeight: 500 }}>Library</h3>
-                    </div>
-                    <div style={{ flex: 1, overflowY: 'auto', padding: '0.5rem' }}>
-                        {sidebar}
-                    </div>
-                </div>
-            </div>
+            </Portal>
         );
     },
 
@@ -297,6 +303,7 @@ export const defaultPreset: ComponentPreset = {
         <div
             onClick={onClick}
             style={{
+                flexShrink: 0,
                 aspectRatio: '1/1',
                 borderRadius: '0.375rem',
                 overflow: 'hidden',

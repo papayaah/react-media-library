@@ -14,6 +14,7 @@ export type { RecentMediaGridProps } from './components/RecentMediaGrid';
 export { QuickMediaPicker } from './components/QuickMediaPicker';
 export { MediaAttachmentStrip } from './components/MediaAttachmentStrip';
 export type { MediaAttachmentStripProps } from './components/MediaAttachmentStrip';
+export { Portal } from './components/Portal';
 
 // Presets
 export { tailwindPreset, lucideIcons } from './presets';

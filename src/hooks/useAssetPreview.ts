@@ -9,43 +9,49 @@ const blobCache = new Map<string, string>();
  * If the asset already has a previewUrl (e.g. cloud URL), it uses it immediately.
  * Otherwise, it stays null until 'enabled' is true, at which point it loads from OPFS.
  */
-export function useAssetPreview(asset: MediaAsset, enabled: boolean = true) {
-    const [url, setUrl] = useState<string | undefined>(asset.previewUrl);
-    const loadingRef = useRef(false);
+export function useAssetPreview(asset: MediaAsset | null | undefined, enabled: boolean = true, preferFull: boolean = false) {
+    const [url, setUrl] = useState<string | undefined>(undefined);
+    const loadingRef = useRef<string | null>(null);
 
     useEffect(() => {
-        // If we have a URL (or it's already loading/disabled), nothing to do
-        if (!enabled || url || loadingRef.current) return;
-
-        const handle = asset.thumbnailHandleName || asset.handleName;
-        if (!handle) return;
-
-        // Check global cache first to prevent re-reading from OPFS if we already have a blob for this handle
-        if (blobCache.has(handle)) {
-            setUrl(blobCache.get(handle));
+        if (!enabled || !asset) {
+            setUrl(undefined);
             return;
         }
 
-        loadingRef.current = true;
-        getFileFromOpfs(handle).then(file => {
-            if (file) {
-                const objectUrl = URL.createObjectURL(file);
-                blobCache.set(handle, objectUrl);
-                setUrl(objectUrl);
-            }
-        }).catch(err => {
-            console.error('[useAssetPreview] Failed to load local asset:', err);
-        }).finally(() => {
-            loadingRef.current = false;
-        });
-    }, [asset.id, enabled, url]);
+        const handle = preferFull ? (asset.handleName || asset.thumbnailHandleName) : (asset.thumbnailHandleName || asset.handleName);
+        const cloudUrl = preferFull ? (asset.fullUrl || asset.previewUrl) : asset.previewUrl;
 
-    // If the asset.previewUrl changes (e.g. cloud sync), sync our local state
-    useEffect(() => {
-        if (asset.previewUrl && asset.previewUrl !== url) {
-            setUrl(asset.previewUrl);
+        // 1. Determine the best immediate URL (Cache > Cloud > undefined)
+        const cachedUrl = handle ? blobCache.get(handle) : undefined;
+        const targetUrl = cachedUrl || cloudUrl;
+
+        // Update state if it doesn't match the target for the current asset
+        if (url !== targetUrl) {
+            setUrl(targetUrl);
         }
-    }, [asset.previewUrl]);
+
+        // 2. Trigger load from OPFS if handle exists and isn't cached/loading
+        if (handle && !blobCache.has(handle) && loadingRef.current !== handle) {
+            loadingRef.current = handle;
+            getFileFromOpfs(handle).then(file => {
+                if (file) {
+                    const objectUrl = URL.createObjectURL(file);
+                    blobCache.set(handle, objectUrl);
+                    // Only update if we haven't switched to a different handle/asset
+                    if (loadingRef.current === handle) {
+                        setUrl(objectUrl);
+                    }
+                }
+            }).catch(err => {
+                console.error('[useAssetPreview] Failed to load local asset:', err);
+            }).finally(() => {
+                if (loadingRef.current === handle) {
+                    loadingRef.current = null;
+                }
+            });
+        }
+    }, [asset?.id, asset?.handleName, asset?.thumbnailHandleName, asset?.previewUrl, asset?.fullUrl, enabled, preferFull]);
 
     return url;
 }

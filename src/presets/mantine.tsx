@@ -129,7 +129,7 @@ export const mantinePreset: ComponentPreset = {
     },
 
     Image: ({ src, alt, className, onLoad, style }: ImageProps) => (
-        <MantineImage src={src} alt={alt} className={className} style={style} fit="cover" w="100%" h="100%" onLoad={onLoad} />
+        <MantineImage src={src} alt={alt} className={className} style={{ width: '100%', height: '100%', ...style }} fit={style?.objectFit ? (style.objectFit as any) : "cover"} w="100%" h="100%" onLoad={onLoad} />
     ),
 
     Modal: ({ isOpen, onClose, title, children }: ModalProps) => (
@@ -209,22 +209,16 @@ export const mantinePreset: ComponentPreset = {
             withCloseButton={false}
             padding={0}
             styles={{ body: { height: '100vh', display: 'flex' } }}
-            zIndex={1100}
+            zIndex={9999}
         >
             <div style={{
                 flex: 1,
                 position: 'relative',
-                // Checkerboard background for transparency support
-                backgroundColor: '#1a1a1a',
-                backgroundImage: 'linear-gradient(45deg, #252525 25%, transparent 25%), linear-gradient(-45deg, #252525 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #252525 75%), linear-gradient(-45deg, transparent 75%, #252525 75%)',
-                backgroundSize: '20px 20px',
-                backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
+                backgroundColor: '#000000',
+                overflow: 'hidden'
             }}>
                 {main}
-                <div style={{ position: 'absolute', top: '1rem', right: '1rem', zIndex: 10 }}>
+                <div style={{ position: 'absolute', top: '1rem', right: '1rem', zIndex: 1150 }}>
                     {actions}
                 </div>
             </div>
@@ -243,6 +237,7 @@ export const mantinePreset: ComponentPreset = {
         <UnstyledButton
             onClick={onClick}
             style={{
+                flexShrink: 0,
                 width: '100%',
                 aspectRatio: '1/1',
                 borderRadius: 'var(--mantine-radius-md)',
@@ -257,7 +252,7 @@ export const mantinePreset: ComponentPreset = {
                 backgroundPosition: '0 0, 0 6px, 6px -6px, -6px 0px',
             }}
         >
-            <MantineImage src={src} alt={alt} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            <MantineImage src={src} alt={alt} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         </UnstyledButton>
     ),
 
