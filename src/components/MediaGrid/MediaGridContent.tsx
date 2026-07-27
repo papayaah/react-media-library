@@ -81,8 +81,8 @@ const ListAssetItem: React.FC<ListAssetItemProps> = ({
                 display: 'flex',
                 gap: '12px',
                 padding: '12px',
-                background: isSelected ? '#eff6ff' : 'white',
-                border: isSelected ? '1px solid #3b82f6' : '1px solid #e5e7eb',
+                background: isSelected ? 'var(--rml-accent-soft)' : 'var(--rml-surface)',
+                border: isSelected ? '1px solid var(--rml-accent)' : '1px solid var(--rml-border)',
                 borderRadius: '12px',
                 cursor: draggable ? (isItemDragging ? 'grabbing' : 'grab') : 'pointer',
                 transition: 'all 0.2s',
@@ -90,18 +90,18 @@ const ListAssetItem: React.FC<ListAssetItemProps> = ({
                 position: 'relative',
             }}
         >
-            <div style={{ width: '48px', height: '48px', borderRadius: '8px', overflow: 'hidden', flexShrink: 0, background: '#f3f4f6' }}>
+            <div style={{ width: '48px', height: '48px', borderRadius: '8px', overflow: 'hidden', flexShrink: 0, background: 'var(--rml-surface-muted)' }}>
                 {resolvedUrl ? (
                     <img src={resolvedUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
-                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--rml-muted)' }}>
                         {renderTypeIcon(iconMap[asset.fileType], 24)}
                     </div>
                 )}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 600, fontSize: '13px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{asset.fileName}</div>
-                <div style={{ fontSize: '11px', color: '#6b7280' }}>
+                <div style={{ fontSize: '11px', color: 'var(--rml-muted)' }}>
                     {asset.fileType.toUpperCase()} • {asset.width || '?'}x{asset.height || '?'}
                 </div>
             </div>
@@ -116,8 +116,8 @@ const ListAssetItem: React.FC<ListAssetItemProps> = ({
                             width: '24px',
                             height: '24px',
                             borderRadius: '50%',
-                            border: isSelected ? 'none' : '1.5px solid #d1d5db',
-                            background: isSelected ? '#3b82f6' : 'transparent',
+                            border: isSelected ? 'none' : '1.5px solid var(--rml-border)',
+                            background: isSelected ? 'var(--rml-accent)' : 'transparent',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -181,19 +181,19 @@ export const MediaGridContent: React.FC<MediaGridContentProps> = ({
             <div style={{
                 textAlign: 'center',
                 padding: '4rem 2rem',
-                backgroundColor: '#f9fafb',
+                backgroundColor: 'var(--rml-surface-muted)',
                 borderRadius: '1rem',
-                border: '2px dashed #e5e7eb'
+                border: '2px dashed var(--rml-border)'
             }}>
-                <div style={{ color: '#9ca3af', marginBottom: '1rem' }}>
+                <div style={{ color: 'var(--rml-muted)', marginBottom: '1rem' }}>
                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
                         <circle cx="8.5" cy="8.5" r="1.5" />
                         <polyline points="21 15 16 10 5 21" />
                     </svg>
                 </div>
-                <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#374151', marginBottom: '0.5rem' }}>No assets found</h3>
-                <p style={{ color: '#6b7280' }}>Try adjusting your filters or upload some new files.</p>
+                <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--rml-foreground)', marginBottom: '0.5rem' }}>No assets found</h3>
+                <p style={{ color: 'var(--rml-muted)' }}>Try adjusting your filters or upload some new files.</p>
             </div>
         );
     }
@@ -260,8 +260,8 @@ export const MediaGridContent: React.FC<MediaGridContentProps> = ({
                     display: 'flex',
                     justifyContent: 'space-between',
                     padding: '0.5rem 0.75rem',
-                    borderBottom: '1px solid #e5e7eb',
-                    color: '#6b7280',
+                    borderBottom: '1px solid var(--rml-border)',
+                    color: 'var(--rml-muted)',
                     fontSize: '11px',
                     fontWeight: 700,
                     textTransform: 'uppercase',

@@ -10,6 +10,12 @@ import { MediaGridContent } from './MediaGridContent';
 import { MediaGridModals } from './MediaGridModals';
 import { MediaGridLibraryTab } from './MediaGridLibraryTab';
 import { typeIconMap } from './utils';
+import {
+    createMediaThemeStyle,
+    MediaThemeScope,
+    type MediaThemeMode,
+    type MediaThemeTokens,
+} from '../../theme';
 
 export interface MediaGridProps extends DragDropProps {
     preset: ComponentPreset;
@@ -20,6 +26,11 @@ export interface MediaGridProps extends DragDropProps {
     defaultViewMode?: 'grid' | 'list' | 'masonry';
     defaultItemVariant?: 'default' | 'minimal';
     masonryColumns?: number;
+    theme?: MediaThemeMode;
+    tokens?: Partial<MediaThemeTokens>;
+    className?: string;
+    style?: React.CSSProperties;
+    showHeader?: boolean;
 }
 
 export const MediaGrid: React.FC<MediaGridProps> = ({
@@ -35,6 +46,11 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
     defaultViewMode = 'grid',
     defaultItemVariant = 'default',
     masonryColumns = 4,
+    theme = 'system',
+    tokens,
+    className,
+    style,
+    showHeader = true,
 }) => {
     const context = useMediaLibraryContext();
     const {
@@ -75,6 +91,10 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
     const [aiModel, setAiModel] = useState('');
 
     const iconMap = useMemo(() => typeIconMap(icons), [icons]);
+    const themeStyle = useMemo(
+        () => createMediaThemeStyle(theme, tokens),
+        [theme, tokens],
+    );
 
     // Computed
     const filteredAssets = useMemo(() => {
@@ -170,14 +190,24 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
     };
 
     return (
-        <div style={{ padding: '0.75rem', position: 'relative' }}>
-            <MediaGridHeader />
+        <MediaThemeScope style={themeStyle}>
+        <div
+            className={className}
+            style={{
+                ...themeStyle,
+                padding: '0.75rem',
+                position: 'relative',
+                background: 'var(--rml-background)',
+                ...style,
+            }}
+        >
+            {showHeader && <MediaGridHeader />}
 
             {libraryAvailable && (
                 <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', flex: 1, borderRadius: 8, overflow: 'hidden', border: '1px solid #dee2e6' }}>
-                        <button onClick={() => { setLibraryInlineOpen(false); deselectAllLibrary(); }} style={{ flex: 1, padding: '0.5rem 1rem', fontSize: '0.813rem', fontWeight: 600, border: 'none', cursor: 'pointer', background: !libraryInlineOpen ? '#7c3aed' : 'transparent', color: !libraryInlineOpen ? '#fff' : '#6b7280', transition: 'all 0.15s' }}>Uploads</button>
-                        <button onClick={() => { if (!libraryInlineOpen) fetchLibraryCategories(); setLibraryInlineOpen(true); }} style={{ flex: 1, padding: '0.5rem 1rem', fontSize: '0.813rem', fontWeight: 600, border: 'none', borderLeft: '1px solid #dee2e6', cursor: 'pointer', background: libraryInlineOpen ? '#7c3aed' : 'transparent', color: libraryInlineOpen ? '#fff' : '#6b7280', transition: 'all 0.15s' }}>Library</button>
+                    <div style={{ display: 'flex', flex: 1, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--rml-border)' }}>
+                        <button onClick={() => { setLibraryInlineOpen(false); deselectAllLibrary(); }} style={{ flex: 1, padding: '0.5rem 1rem', fontSize: '0.813rem', fontWeight: 600, border: 'none', cursor: 'pointer', background: !libraryInlineOpen ? 'var(--rml-accent)' : 'transparent', color: !libraryInlineOpen ? 'var(--rml-surface)' : 'var(--rml-muted)', transition: 'all 0.15s' }}>Uploads</button>
+                        <button onClick={() => { if (!libraryInlineOpen) fetchLibraryCategories(); setLibraryInlineOpen(true); }} style={{ flex: 1, padding: '0.5rem 1rem', fontSize: '0.813rem', fontWeight: 600, border: 'none', borderLeft: '1px solid var(--rml-border)', cursor: 'pointer', background: libraryInlineOpen ? 'var(--rml-accent)' : 'transparent', color: libraryInlineOpen ? 'var(--rml-surface)' : 'var(--rml-muted)', transition: 'all 0.15s' }}>Library</button>
                     </div>
                     {aiAvailable && (
                         <button
@@ -187,12 +217,12 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                                 width: '38px',
                                 height: '38px',
                                 borderRadius: '8px',
-                                border: '1px solid #dee2e6',
-                                background: '#fff',
+                                border: '1px solid var(--rml-border)',
+                                background: 'var(--rml-surface)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                color: '#7c3aed',
+                                color: 'var(--rml-accent)',
                                 cursor: 'pointer',
                                 transition: 'all 0.15s',
                                 flexShrink: 0
@@ -227,8 +257,8 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                             alignItems: 'center',
                             justifyContent: 'space-between',
                             padding: '0.625rem 0.875rem',
-                            backgroundColor: '#fff',
-                            borderBottom: '1px solid #e2e8f0',
+                            backgroundColor: 'var(--rml-surface)',
+                            borderBottom: '1px solid var(--rml-border)',
                             marginBottom: '0.75rem',
                             borderRadius: '10px',
                             boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
@@ -238,8 +268,8 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                             gap: '1rem'
                         }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: selectedIds.size > 0 ? '#3b82f6' : '#e2e8f0' }}></div>
-                                <span style={{ fontSize: '12px', fontWeight: 600, color: '#475569' }}>
+                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: selectedIds.size > 0 ? 'var(--rml-accent)' : 'var(--rml-border)' }}></div>
+                                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--rml-muted)' }}>
                                     {selectedIds.size} selected
                                 </span>
                             </div>
@@ -248,7 +278,7 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                                 {selectedIds.size > 0 ? (
                                     <>
                                         {bulkDeleteConfirm ? (
-                                            <div style={{ display: 'flex', gap: '4px', background: '#fef2f2', padding: '2px', borderRadius: '6px' }}>
+                                            <div style={{ display: 'flex', gap: '4px', background: 'var(--rml-danger-soft)', padding: '2px', borderRadius: '6px' }}>
                                                 <Button variant="danger" size="sm" onClick={handleBulkDelete} style={{ height: '28px', fontSize: '11px' }}>Confirm Delete</Button>
                                                 <Button variant="secondary" size="sm" onClick={() => setBulkDeleteConfirm(false)} style={{ height: '28px', fontSize: '11px' }}>Cancel</Button>
                                             </div>
@@ -263,22 +293,22 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                                                 Delete Selected
                                             </Button>
                                         )}
-                                        <div style={{ width: '1px', height: '20px', background: '#e2e8f0', margin: '0 4px' }}></div>
+                                        <div style={{ width: '1px', height: '20px', background: 'var(--rml-border)', margin: '0 4px' }}></div>
                                     </>
                                 ) : (
                                     <Button variant="outline" size="sm" onClick={handleSelectAll} style={{ height: '28px', fontSize: '11px' }}>Select All</Button>
                                 )}
                                 {selectedIds.size > 0 && (
-                                    <Button variant="secondary" size="sm" onClick={handleDeselectAll} style={{ height: '28px', fontSize: '11px', color: '#64748b', background: 'transparent', border: 'none' }}>Clear Selection</Button>
+                                    <Button variant="secondary" size="sm" onClick={handleDeselectAll} style={{ height: '28px', fontSize: '11px', color: 'var(--rml-muted)', background: 'transparent', border: 'none' }}>Clear Selection</Button>
                                 )}
                             </div>
                         </div>
                     )}
                     <div style={{ position: 'relative' }}>
                         {isGlobalDragging && (
-                            <div style={{ position: 'absolute', inset: '-0.5rem', backgroundColor: 'rgba(59, 130, 246, 0.08)', border: '2px dashed #3b82f6', borderRadius: '16px', zIndex: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', backdropFilter: 'blur(4px)', pointerEvents: 'none' }}>
-                                <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}>{renderIcon(icons?.upload, 32)}</div>
-                                <div style={{ textAlign: 'center' }}><div style={{ fontWeight: 700, color: '#1e3a8a', fontSize: '1.125rem' }}>Drop to Upload</div></div>
+                            <div style={{ position: 'absolute', inset: '-0.5rem', backgroundColor: 'var(--rml-accent-soft)', border: '2px dashed var(--rml-accent)', borderRadius: '16px', zIndex: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', backdropFilter: 'blur(4px)', pointerEvents: 'none' }}>
+                                <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: 'var(--rml-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--rml-accent)', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}>{renderIcon(icons?.upload, 32)}</div>
+                                <div style={{ textAlign: 'center' }}><div style={{ fontWeight: 700, color: 'var(--rml-accent)', fontSize: '1.125rem' }}>Drop to Upload</div></div>
                             </div>
                         )}
                         <MediaGridContent
@@ -293,34 +323,34 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                     <div style={{
                         marginTop: '2.5rem',
                         padding: '1rem',
-                        backgroundColor: '#f8fafc',
+                        backgroundColor: 'var(--rml-surface-muted)',
                         borderRadius: '0.75rem',
-                        border: '1px solid #f1f5f9'
+                        border: '1px solid var(--rml-border)'
                     }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', alignItems: 'center' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: context.storageUsage.isCloudFull ? '#f59e0b' : (context.storageUsage.percent > 90 ? '#ef4444' : '#7c3aed') }}></div>
-                                <span style={{ fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.025em' }}>
+                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: context.storageUsage.isCloudFull ? 'var(--rml-warning)' : (context.storageUsage.percent > 90 ? 'var(--rml-danger)' : 'var(--rml-accent)') }}></div>
+                                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--rml-muted)', textTransform: 'uppercase', letterSpacing: '0.025em' }}>
                                     {context.storageUsage.isCloudFull ? 'Cloud Full (Local Mode)' : 'Storage Usage'}
                                 </span>
                             </div>
-                            <span style={{ fontSize: '11px', fontWeight: 800, color: context.storageUsage.isCloudFull ? '#f59e0b' : (context.storageUsage.percent > 90 ? '#ef4444' : '#7c3aed') }}>{context.storageUsage.percent}%</span>
+                            <span style={{ fontSize: '11px', fontWeight: 800, color: context.storageUsage.isCloudFull ? 'var(--rml-warning)' : (context.storageUsage.percent > 90 ? 'var(--rml-danger)' : 'var(--rml-accent)') }}>{context.storageUsage.percent}%</span>
                         </div>
-                        <div style={{ height: '8px', backgroundColor: '#e2e8f0', borderRadius: '4px', overflow: 'hidden', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.05)' }}>
+                        <div style={{ height: '8px', backgroundColor: 'var(--rml-border)', borderRadius: '4px', overflow: 'hidden', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.05)' }}>
                             <div style={{
                                 height: '100%',
                                 width: `${context.storageUsage.percent}%`,
                                 background: context.storageUsage.isCloudFull
-                                    ? 'linear-gradient(90deg, #f59e0b, #fbbf24)'
+                                    ? 'var(--rml-warning)'
                                     : (context.storageUsage.percent > 90
-                                        ? 'linear-gradient(90deg, #ef4444, #f87171)'
-                                        : 'linear-gradient(90deg, #7c3aed, #a78bfa)'),
+                                        ? 'var(--rml-danger)'
+                                        : 'var(--rml-accent)'),
                                 transition: 'width 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
                                 borderRadius: '4px'
                             }} />
                         </div>
                         <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 500 }}>
+                            <span style={{ fontSize: '10px', color: 'var(--rml-muted)', fontWeight: 500 }}>
                                 {(() => {
                                     const bytes = context.storageUsage.used;
                                     if (bytes === 0) return '0 B';
@@ -330,7 +360,7 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                                     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
                                 })()} used
                             </span>
-                            <span style={{ fontSize: '10px', color: '#94a3b8' }}>
+                            <span style={{ fontSize: '10px', color: 'var(--rml-muted)' }}>
                                 {(() => {
                                     const bytes = context.storageUsage.limit;
                                     const k = 1024;
@@ -365,5 +395,6 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
                 viewingAsset={viewingAsset} setViewingAsset={setViewingAsset} filteredAssets={filteredAssets} deleteAsset={deleteAsset} uploadFiles={uploadFiles}
             />
         </div>
+        </MediaThemeScope>
     );
 };

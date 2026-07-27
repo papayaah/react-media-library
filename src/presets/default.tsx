@@ -1,22 +1,23 @@
 import React from 'react';
 import { Portal } from '../components/Portal';
-import { ComponentPreset, CardProps, ButtonProps, TextInputProps, SelectProps, CheckboxProps, BadgeProps, ImageProps, ModalProps, LoaderProps, EmptyStateProps, FileButtonProps, GridProps, ViewerProps, ViewerThumbnailProps } from '../types';
+import { ComponentPreset, CardProps, ButtonProps, TextInputProps, SelectProps, CheckboxProps, BadgeProps, ImageProps, ModalProps, LoaderProps, EmptyStateProps, FileButtonProps, GridProps, ViewerProps, ViewerThumbnailProps, TextProps } from '../types';
 
 /**
  * Default Component Preset
- * A neutral, unstyled preset using standard HTML elements and inline styles.
- * Useful when no specific UI library is available.
+ * A neutral preset using standard HTML elements and semantic theme variables.
+ * Useful when no specific UI library is available and fully overrideable via props.
  */
 export const defaultPreset: ComponentPreset = {
     Card: ({ children, onClick, selected, className = '', style }: CardProps) => (
         <div
             onClick={onClick}
             style={{
-                border: selected ? '2px solid #2563eb' : '1px solid #e5e7eb',
+                border: selected ? '2px solid var(--rml-accent)' : '1px solid var(--rml-border)',
                 borderRadius: '0.5rem',
                 padding: '1rem',
                 cursor: onClick ? 'pointer' : 'default',
-                backgroundColor: '#ffffff',
+                backgroundColor: 'var(--rml-surface)',
+                color: 'var(--rml-foreground)',
                 transition: 'all 0.2s',
                 boxShadow: onClick ? '0 1px 3px 0 rgba(0, 0, 0, 0.1)' : 'none',
                 ...style,
@@ -27,7 +28,7 @@ export const defaultPreset: ComponentPreset = {
         </div>
     ),
 
-    Button: ({ children, onClick, variant = 'primary', disabled, loading, size = 'md', fullWidth, leftIcon, className = '' }: ButtonProps) => {
+    Button: ({ children, onClick, variant = 'primary', disabled, loading, size = 'md', fullWidth, leftIcon, className = '', style }: ButtonProps) => {
         const baseStyle: React.CSSProperties = {
             display: 'inline-flex',
             alignItems: 'center',
@@ -44,17 +45,17 @@ export const defaultPreset: ComponentPreset = {
         };
 
         const variantStyles: Record<string, React.CSSProperties> = {
-            primary: { backgroundColor: '#2563eb', color: '#ffffff' },
-            secondary: { backgroundColor: '#f3f4f6', color: '#1f2937', borderColor: '#d1d5db' },
-            danger: { backgroundColor: '#dc2626', color: '#ffffff' },
-            outline: { backgroundColor: 'transparent', color: '#374151', borderColor: '#d1d5db' },
+            primary: { backgroundColor: 'var(--rml-accent)', color: '#ffffff' },
+            secondary: { backgroundColor: 'var(--rml-surface-muted)', color: 'var(--rml-foreground)', borderColor: 'var(--rml-border)' },
+            danger: { backgroundColor: 'var(--rml-danger)', color: '#ffffff' },
+            outline: { backgroundColor: 'transparent', color: 'var(--rml-foreground)', borderColor: 'var(--rml-border)' },
         };
 
         return (
             <button
                 onClick={onClick}
                 disabled={disabled || loading}
-                style={{ ...baseStyle, ...variantStyles[variant] }}
+                style={{ ...baseStyle, ...variantStyles[variant], ...style }}
                 className={className}
             >
                 {leftIcon && <span>{leftIcon}</span>}
@@ -63,10 +64,10 @@ export const defaultPreset: ComponentPreset = {
         );
     },
 
-    TextInput: ({ value, onChange, placeholder, type = 'text', leftIcon, className = '' }: TextInputProps) => (
+    TextInput: ({ value, onChange, placeholder, type = 'text', leftIcon, className = '', style }: TextInputProps) => (
         <div style={{ position: 'relative', width: '100%' }} className={className}>
             {leftIcon && (
-                <div style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }}>
+                <div style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--rml-muted)' }}>
                     {leftIcon}
                 </div>
             )}
@@ -80,15 +81,18 @@ export const defaultPreset: ComponentPreset = {
                     padding: '0.5rem 0.75rem',
                     paddingLeft: leftIcon ? '2.5rem' : '0.75rem',
                     borderRadius: '0.375rem',
-                    border: '1px solid #d1d5db',
+                    border: '1px solid var(--rml-border)',
                     fontSize: '1rem',
                     outline: 'none',
+                    background: 'var(--rml-surface)',
+                    color: 'var(--rml-foreground)',
+                    ...style,
                 }}
             />
         </div>
     ),
 
-    Select: ({ value, onChange, options, placeholder, label, className = '' }: SelectProps) => (
+    Select: ({ value, onChange, options, placeholder, label, className = '', style }: SelectProps) => (
         <div style={{ width: '100%' }} className={className}>
             {label && <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: 500 }}>{label}</label>}
             <select
@@ -98,10 +102,12 @@ export const defaultPreset: ComponentPreset = {
                     width: '100%',
                     padding: '0.5rem 0.75rem',
                     borderRadius: '0.375rem',
-                    border: '1px solid #d1d5db',
+                    border: '1px solid var(--rml-border)',
                     fontSize: '1rem',
                     outline: 'none',
-                    backgroundColor: '#ffffff',
+                    backgroundColor: 'var(--rml-surface)',
+                    color: 'var(--rml-foreground)',
+                    ...style,
                 }}
             >
                 {placeholder && <option value="">{placeholder}</option>}
@@ -112,23 +118,23 @@ export const defaultPreset: ComponentPreset = {
         </div>
     ),
 
-    Checkbox: ({ checked, onChange, label, className = '' }: CheckboxProps) => (
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }} className={className}>
+    Checkbox: ({ checked, onChange, label, className = '', style }: CheckboxProps) => (
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', color: 'var(--rml-foreground)', ...style }} className={className}>
             <input
                 type="checkbox"
                 checked={checked}
                 onChange={(e) => onChange(e.target.checked)}
-                style={{ width: '1rem', height: '1rem' }}
+                style={{ width: '1rem', height: '1rem', accentColor: 'var(--rml-accent)' }}
             />
             {label && <span style={{ fontSize: '0.875rem' }}>{label}</span>}
         </label>
     ),
 
-    Badge: ({ children, variant = 'default', className = '' }: BadgeProps) => {
+    Badge: ({ children, variant = 'default', className = '', style }: BadgeProps) => {
         const styles: Record<string, React.CSSProperties> = {
-            default: { backgroundColor: '#f3f4f6', color: '#1f2937' },
-            primary: { backgroundColor: '#dbeafe', color: '#1e40af' },
-            secondary: { backgroundColor: '#f3e8ff', color: '#6b21a8' },
+            default: { backgroundColor: 'var(--rml-surface-muted)', color: 'var(--rml-foreground)' },
+            primary: { backgroundColor: 'var(--rml-accent-soft)', color: 'var(--rml-accent)' },
+            secondary: { backgroundColor: 'var(--rml-surface-muted)', color: 'var(--rml-muted)' },
         };
         return (
             <span
@@ -139,7 +145,8 @@ export const defaultPreset: ComponentPreset = {
                     borderRadius: '9999px',
                     fontSize: '0.75rem',
                     fontWeight: 500,
-                    ...styles[variant]
+                    ...styles[variant],
+                    ...style,
                 }}
                 className={className}
             >
@@ -169,13 +176,13 @@ export const defaultPreset: ComponentPreset = {
                 }}>
                     <div style={{ position: 'absolute', inset: 0 }} onClick={onClose} />
                     <div style={{
-                        position: 'relative', backgroundColor: '#ffffff', borderRadius: '0.5rem',
+                        position: 'relative', backgroundColor: 'var(--rml-surface)', color: 'var(--rml-foreground)', borderRadius: '0.5rem',
                         boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
                         maxWidth: '42rem', width: '100%', margin: '1rem', maxHeight: '90vh', overflow: 'auto'
                     }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', borderBottom: '1px solid #e5e7eb' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', borderBottom: '1px solid var(--rml-border)' }}>
                             <h3 style={{ fontSize: '1.125rem', fontWeight: 600 }}>{title}</h3>
-                            <button onClick={onClose} style={{ fontSize: '1.5rem', lineHeight: 1, background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af' }}>×</button>
+                            <button onClick={onClose} style={{ fontSize: '1.5rem', lineHeight: 1, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--rml-muted)' }}>×</button>
                         </div>
                         <div style={{ padding: '1rem' }}>{children}</div>
                     </div>
@@ -189,8 +196,8 @@ export const defaultPreset: ComponentPreset = {
             style={{
                 width: size === 'sm' ? '1rem' : size === 'lg' ? '3rem' : '2rem',
                 height: size === 'sm' ? '1rem' : size === 'lg' ? '3rem' : '2rem',
-                border: '2px solid #e5e7eb',
-                borderTopColor: '#2563eb',
+                border: '2px solid var(--rml-border)',
+                borderTopColor: 'var(--rml-accent)',
                 borderRadius: '50%',
                 animation: 'spin 1s linear infinite',
             }}
@@ -200,8 +207,8 @@ export const defaultPreset: ComponentPreset = {
 
     EmptyState: ({ icon, message, className = '' }: EmptyStateProps) => (
         <div style={{ textAlign: 'center', padding: '3rem 0' }} className={className}>
-            {icon && <div style={{ marginBottom: '1rem', color: '#9ca3af', display: 'flex', justifyContent: 'center' }}>{icon}</div>}
-            <p style={{ color: '#6b7280' }}>{message}</p>
+            {icon && <div style={{ marginBottom: '1rem', color: 'var(--rml-muted)', display: 'flex', justifyContent: 'center' }}>{icon}</div>}
+            <p style={{ color: 'var(--rml-muted)' }}>{message}</p>
         </div>
     ),
 
@@ -236,7 +243,7 @@ export const defaultPreset: ComponentPreset = {
 
     Skeleton: ({ className = '' }: { className?: string }) => (
         <div style={{
-            backgroundColor: '#f3f4f6',
+            backgroundColor: 'var(--rml-surface-muted)',
             borderRadius: '0.5rem',
             animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         }} className={className} />
@@ -246,7 +253,7 @@ export const defaultPreset: ComponentPreset = {
         <div
             onClick={onClick}
             style={{
-                border: `2px dashed ${isDragging ? '#2563eb' : '#d1d5db'}`,
+                border: `2px dashed ${isDragging ? 'var(--rml-accent)' : 'var(--rml-border)'}`,
                 borderRadius: '0.5rem',
                 padding: '1rem',
                 display: 'flex',
@@ -255,7 +262,8 @@ export const defaultPreset: ComponentPreset = {
                 justifyContent: 'center',
                 cursor: 'pointer',
                 minHeight: '300px',
-                backgroundColor: isDragging ? '#eff6ff' : 'transparent',
+                backgroundColor: isDragging ? 'var(--rml-accent-soft)' : 'var(--rml-surface)',
+                color: 'var(--rml-foreground)',
                 transition: 'all 0.2s',
             }}
             className={className}
@@ -286,8 +294,8 @@ export const defaultPreset: ComponentPreset = {
                             </button>
                         </div>
                     </div>
-                    <div style={{ width: '16rem', borderLeft: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', backgroundColor: '#111111', color: '#ffffff' }}>
-                        <div style={{ padding: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                    <div style={{ width: '16rem', borderLeft: '1px solid var(--rml-border)', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--rml-surface)', color: 'var(--rml-foreground)' }}>
+                        <div style={{ padding: '1rem', borderBottom: '1px solid var(--rml-border)' }}>
                             <h3 style={{ fontSize: '0.875rem', fontWeight: 500 }}>Library</h3>
                         </div>
                         <div style={{ flex: 1, overflowY: 'auto', padding: '0.5rem' }}>
@@ -308,7 +316,8 @@ export const defaultPreset: ComponentPreset = {
                 borderRadius: '0.375rem',
                 overflow: 'hidden',
                 cursor: 'pointer',
-                border: selected ? '2px solid #2563eb' : '2px solid transparent',
+                border: selected ? '2px solid var(--rml-accent)' : '2px solid transparent',
+                background: 'var(--rml-surface-muted)',
                 opacity: selected ? 1 : 0.6,
                 transition: 'all 0.2s',
             }}
@@ -317,7 +326,7 @@ export const defaultPreset: ComponentPreset = {
         </div>
     ),
 
-    Text: ({ children, size = 'md', fw, c, mb, className = '', style }: any) => {
+    Text: ({ children, size = 'md', fw, c, mb, className = '', style }: TextProps) => {
         const sizeMap = {
             xs: '0.75rem',
             sm: '0.875rem',
@@ -330,8 +339,8 @@ export const defaultPreset: ComponentPreset = {
             <div
                 style={{
                     fontSize: sizeMap[size as keyof typeof sizeMap] || sizeMap.md,
-                    fontWeight: fw as any,
-                    color: c,
+                    fontWeight: fw as React.CSSProperties['fontWeight'],
+                    color: c || 'var(--rml-foreground)',
                     marginBottom: typeof mb === 'number' ? `${mb}px` : mb,
                     ...style
                 }}

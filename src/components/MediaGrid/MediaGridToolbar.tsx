@@ -112,10 +112,10 @@ export const MediaGridToolbar: React.FC<MediaGridToolbarProps> = ({
                 {/* Orientation Row */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <div style={{ width: '4px', height: '4px', borderRadius: '50%', backgroundColor: '#7c3aed' }}></div>
-                        <span style={{ fontSize: '11px', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Orientation</span>
+                        <div style={{ width: '4px', height: '4px', borderRadius: '50%', backgroundColor: 'var(--rml-accent)' }}></div>
+                        <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--rml-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Orientation</span>
                     </div>
-                    <div style={{ display: 'flex', background: '#f8fafc', padding: '2px', borderRadius: '8px', border: '1px solid #e2e8f0', width: 'fit-content' }}>
+                    <div style={{ display: 'flex', background: 'var(--rml-surface-muted)', padding: '2px', borderRadius: '8px', border: '1px solid var(--rml-border)', width: 'fit-content' }}>
                         {[
                             {
                                 id: 'all', label: 'All', icon: (
@@ -145,8 +145,8 @@ export const MediaGridToolbar: React.FC<MediaGridToolbarProps> = ({
                                         justifyContent: 'center',
                                         borderRadius: '6px',
                                         border: 'none',
-                                        background: active ? '#fff' : 'transparent',
-                                        color: active ? '#7c3aed' : '#94a3b8',
+                                        background: active ? 'var(--rml-surface)' : 'transparent',
+                                        color: active ? 'var(--rml-accent)' : 'var(--rml-muted)',
                                         cursor: 'pointer',
                                         boxShadow: active ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
                                         transition: 'all 0.1s'
@@ -164,8 +164,8 @@ export const MediaGridToolbar: React.FC<MediaGridToolbarProps> = ({
                 {/* Date Range Row */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <div style={{ width: '4px', height: '4px', borderRadius: '50%', backgroundColor: '#667eea' }}></div>
-                        <span style={{ fontSize: '11px', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Date Range</span>
+                        <div style={{ width: '4px', height: '4px', borderRadius: '50%', backgroundColor: 'var(--rml-accent)' }}></div>
+                        <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--rml-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Date Range</span>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '0.5rem' }}>
                         <TextInput

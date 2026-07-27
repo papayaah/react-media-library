@@ -275,7 +275,7 @@ export const MediaGridModals: React.FC<MediaGridModalsProps> = ({
                         </div>
 
                         {aiError && (
-                            <div style={{ color: '#b91c1c', fontSize: '0.875rem' }}>
+                            <div style={{ color: 'var(--rml-danger)', fontSize: '0.875rem' }}>
                                 {aiError}
                             </div>
                         )}

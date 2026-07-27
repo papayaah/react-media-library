@@ -70,6 +70,45 @@ function App() {
 
 That's it. Drag & drop uploads, search, filters, grid/list/masonry views - all included.
 
+## Themes
+
+The prebuilt `MediaGrid` has a standalone system theme by default and also supports explicit or inherited themes:
+
+```tsx
+<MediaGrid preset={tailwindPreset} theme="system" />
+<MediaGrid preset={tailwindPreset} theme="light" />
+<MediaGrid preset={tailwindPreset} theme="dark" />
+<MediaGrid preset={tailwindPreset} theme="inherit" />
+```
+
+Use `inherit` for a transparent, host-controlled appearance. It leaves color tokens unset so the library can consume inherited `--rml-*` variables or a `tokens` mapping supplied by the host application:
+
+```css
+.my-media-theme {
+  --rml-background: var(--app-background);
+  --rml-surface: var(--app-surface);
+  --rml-foreground: var(--app-text);
+  --rml-muted: var(--app-muted-text);
+  --rml-border: var(--app-border);
+  --rml-accent: var(--app-accent);
+}
+```
+
+Applications can also override individual package tokens without replacing the component preset:
+
+```tsx
+<MediaGrid
+  preset={tailwindPreset}
+  theme="dark"
+  tokens={{
+    accent: '#14b8a6',
+    surface: '#111827',
+  }}
+/>
+```
+
+The supported semantic tokens are `background`, `surface`, `surfaceMuted`, `foreground`, `muted`, `border`, `accent`, `accentSoft`, `danger`, `dangerSoft`, and `warning`.
+
 ## Headless Architecture
 
 The library doesn't ship any UI. You provide components via a `preset`:

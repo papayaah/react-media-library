@@ -82,7 +82,7 @@ export const GridAssetItem: React.FC<GridAssetItemProps> = ({
                     padding: 0,
                     position: 'relative',
                     overflow: 'hidden',
-                    border: isSelected ? '2px solid #2563eb' : undefined,
+                    border: isSelected ? '2px solid var(--rml-accent)' : undefined,
                     // Drag animation styles
                     opacity: isDragging ? 0.4 : 1,
                     transition: 'opacity 0.15s ease-out',
@@ -100,8 +100,8 @@ export const GridAssetItem: React.FC<GridAssetItemProps> = ({
                             width: '24px',
                             height: '24px',
                             borderRadius: '50%',
-                            background: '#2563eb',
-                            border: '2px solid #ffffff',
+                            background: 'var(--rml-accent)',
+                            border: '2px solid var(--rml-surface)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -134,7 +134,7 @@ export const GridAssetItem: React.FC<GridAssetItemProps> = ({
                                 width: '28px',
                                 height: '28px',
                                 borderRadius: '50%',
-                                background: 'rgba(255, 255, 255, 0.9)',
+                                background: 'color-mix(in srgb, var(--rml-surface) 90%, transparent)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -147,7 +147,7 @@ export const GridAssetItem: React.FC<GridAssetItemProps> = ({
                             }}
                             title="View"
                         >
-                            {renderIcon(icons?.zoomIn, 14, { color: '#374151' }, 'View')}
+                            {renderIcon(icons?.zoomIn, 14, { color: 'var(--rml-foreground)' }, 'View')}
                         </div>
 
                         {/* More/Dots Button (Context Menu) */}
@@ -159,7 +159,7 @@ export const GridAssetItem: React.FC<GridAssetItemProps> = ({
                                             width: '28px',
                                             height: '28px',
                                             borderRadius: '50%',
-                                            background: 'rgba(255, 255, 255, 0.9)',
+                                            background: 'color-mix(in srgb, var(--rml-surface) 90%, transparent)',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
@@ -170,7 +170,7 @@ export const GridAssetItem: React.FC<GridAssetItemProps> = ({
                                         title="More options"
                                     >
                                         {icons?.dots ? renderIcon(icons.dots, 14) : (
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--rml-foreground)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                                 <circle cx="12" cy="12" r="1"></circle>
                                                 <circle cx="19" cy="12" r="1"></circle>
                                                 <circle cx="5" cy="12" r="1"></circle>
@@ -211,7 +211,7 @@ export const GridAssetItem: React.FC<GridAssetItemProps> = ({
                                         id: 'delete',
                                         label: 'Move to Trash',
                                         icon: renderIcon(icons?.trash, 14),
-                                        color: 'red',
+                                        color: 'var(--rml-danger)',
                                         divider: true,
                                         onClick: () => onDeleteConfirmChange(asset.id!),
                                     },
@@ -231,11 +231,11 @@ export const GridAssetItem: React.FC<GridAssetItemProps> = ({
                             ? `${asset.width} / ${Math.min(asset.height, asset.width * (4 / 3))}`
                             : '4 / 5'), // Default to 4:5 if no metadata yet
                         overflow: 'hidden',
-                        borderBottom: variant === 'minimal' ? 'none' : '1px solid #e5e7eb',
+                        borderBottom: variant === 'minimal' ? 'none' : '1px solid var(--rml-border)',
                         position: 'relative',
                         // Always use a light background with subtle checkerboard to show transparency
-                        backgroundColor: '#ffffff',
-                        backgroundImage: 'linear-gradient(45deg, #f5f5f5 25%, transparent 25%), linear-gradient(-45deg, #f5f5f5 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f5f5f5 75%), linear-gradient(-45deg, transparent 75%, #f5f5f5 75%)',
+                        backgroundColor: 'var(--rml-surface)',
+                        backgroundImage: 'linear-gradient(45deg, var(--rml-surface-muted) 25%, transparent 25%), linear-gradient(-45deg, var(--rml-surface-muted) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, var(--rml-surface-muted) 75%), linear-gradient(-45deg, transparent 75%, var(--rml-surface-muted) 75%)',
                         backgroundSize: '16px 16px',
                         backgroundPosition: '0 0, 0 8px, 8px -8px, -8px 0px',
                         flexShrink: 0, // Prevent height collapse
@@ -266,7 +266,7 @@ export const GridAssetItem: React.FC<GridAssetItemProps> = ({
                                         left: isSelected && isSelectMode ? '2.25rem' : '0.375rem',
                                         zIndex: 12,
                                         background: 'rgba(245, 158, 11, 0.95)',
-                                        color: 'white',
+                                        color: 'var(--rml-surface)',
                                         padding: '2px 6px',
                                         borderRadius: '4px',
                                         fontSize: '9px',
@@ -327,8 +327,8 @@ export const GridAssetItem: React.FC<GridAssetItemProps> = ({
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            backgroundColor: '#f9fafb',
-                            color: '#e5e7eb',
+                            backgroundColor: 'var(--rml-surface-muted)',
+                            color: 'var(--rml-border)',
                         }}>
                             {/* Icon fallback while not visible or no preview */}
                             {renderTypeIcon(iconMap[asset.fileType], 32)}
@@ -341,7 +341,7 @@ export const GridAssetItem: React.FC<GridAssetItemProps> = ({
                         <div style={{
                             fontSize: '0.813rem',
                             fontWeight: 600,
-                            color: '#111827',
+                            color: 'var(--rml-foreground)',
                             marginBottom: '0.25rem',
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
@@ -356,12 +356,12 @@ export const GridAssetItem: React.FC<GridAssetItemProps> = ({
                             gap: '0.5rem',
                         }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', minWidth: 0 }}>
-                                <div style={{ color: '#6b7280', flexShrink: 0 }}>
+                                <div style={{ color: 'var(--rml-muted)', flexShrink: 0 }}>
                                     {renderTypeIcon(iconMap[asset.fileType], 12)}
                                 </div>
                                 <div style={{
                                     fontSize: '0.688rem',
-                                    color: '#6b7280',
+                                    color: 'var(--rml-muted)',
                                     whiteSpace: 'nowrap',
                                     overflow: 'hidden',
                                     textOverflow: 'ellipsis',
@@ -369,7 +369,7 @@ export const GridAssetItem: React.FC<GridAssetItemProps> = ({
                                     {formatFileSize(asset.size)}
                                 </div>
                             </div>
-                            <div style={{ fontSize: '0.688rem', color: '#9ca3af', flexShrink: 0 }}>
+                            <div style={{ fontSize: '0.688rem', color: 'var(--rml-muted)', flexShrink: 0 }}>
                                 {formatTimestamp(asset.createdAt || 0)}
                             </div>
                         </div>
@@ -382,7 +382,7 @@ export const GridAssetItem: React.FC<GridAssetItemProps> = ({
                         style={{
                             position: 'absolute',
                             inset: 0,
-                            background: 'rgba(255,255,255,0.95)',
+                            background: 'color-mix(in srgb, var(--rml-surface) 95%, transparent)',
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'center',
@@ -392,7 +392,7 @@ export const GridAssetItem: React.FC<GridAssetItemProps> = ({
                         }}
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#ef4444', marginBottom: '0.75rem', textAlign: 'center' }}>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--rml-danger)', marginBottom: '0.75rem', textAlign: 'center' }}>
                             Delete this file?
                         </div>
                         <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>

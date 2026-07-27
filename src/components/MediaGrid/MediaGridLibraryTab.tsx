@@ -109,7 +109,7 @@ export const MediaGridLibraryTab: React.FC<MediaGridLibraryTabProps> = ({
         <div>
             {librarySelectedCategory && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                    <h2 style={{ fontSize: '1rem', fontWeight: '600', color: '#111827', margin: 0 }}>
+                    <h2 style={{ fontSize: '1rem', fontWeight: '600', color: 'var(--rml-foreground)', margin: 0 }}>
                         {libraryCategories.find((c) => c.id === librarySelectedCategory)?.name || 'Assets'}
                     </h2>
                     <Button
@@ -140,12 +140,12 @@ export const MediaGridLibraryTab: React.FC<MediaGridLibraryTabProps> = ({
                                 gap: '0.5rem',
                                 padding: '0.5rem 0.75rem',
                                 borderRadius: '0.5rem',
-                                border: '1px solid #dee2e6',
-                                background: '#fff',
+                                border: '1px solid var(--rml-border)',
+                                background: 'var(--rml-surface)',
                                 cursor: 'pointer',
                                 fontSize: '0.813rem',
                                 fontWeight: 500,
-                                color: '#374151',
+                                color: 'var(--rml-foreground)',
                                 transition: 'all 0.15s',
                             }}
                         >
@@ -153,12 +153,12 @@ export const MediaGridLibraryTab: React.FC<MediaGridLibraryTabProps> = ({
                                 width: 28,
                                 height: 28,
                                 borderRadius: 4,
-                                background: '#f8fafc',
-                                border: '1px solid #f1f5f9',
+                                background: 'var(--rml-surface-muted)',
+                                border: '1px solid var(--rml-border)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                color: '#6366f1',
+                                color: 'var(--rml-accent)',
                                 flexShrink: 0
                             }}>
                                 {getCategoryIcon(cat.name)}
@@ -171,7 +171,7 @@ export const MediaGridLibraryTab: React.FC<MediaGridLibraryTabProps> = ({
                 /* Asset grid */
                 <>
                     {libraryAssets.length === 0 ? (
-                        <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
+                        <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--rml-muted)' }}>
                             No assets in this category
                         </div>
                     ) : (
@@ -210,7 +210,7 @@ export const MediaGridLibraryTab: React.FC<MediaGridLibraryTabProps> = ({
                                         borderRadius: 8,
                                         overflow: 'hidden',
                                         cursor: draggable ? 'grab' : 'pointer',
-                                        border: '1px solid #dee2e6',
+                                        border: '1px solid var(--rml-border)',
                                         transition: 'all 0.15s',
                                     }}
                                 >
@@ -233,7 +233,7 @@ export const MediaGridLibraryTab: React.FC<MediaGridLibraryTabProps> = ({
                                             background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)',
                                         }}
                                     >
-                                        <span style={{ fontSize: '0.688rem', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
+                                        <span style={{ fontSize: '0.688rem', color: 'var(--rml-surface)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
                                             {asset.name}
                                         </span>
                                     </div>
@@ -243,7 +243,7 @@ export const MediaGridLibraryTab: React.FC<MediaGridLibraryTabProps> = ({
                     )}
 
                     {/* Tip */}
-                    <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#9ca3af', textAlign: 'center' }}>
+                    <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: 'var(--rml-muted)', textAlign: 'center' }}>
                         Click an image to add it to your library and apply it
                     </div>
                 </>

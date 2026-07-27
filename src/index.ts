@@ -4,6 +4,8 @@ export { useMediaDragDrop } from './hooks/useMediaDragDrop';
 export { useAssetThumbnails } from './hooks/useAssetThumbnails';
 export type { AssetThumbnail } from './hooks/useAssetThumbnails';
 export { useTheme } from './hooks/useTheme';
+export { createMediaThemeStyle, MediaThemeScope } from './theme';
+export type { MediaThemeMode, MediaThemeTokens } from './theme';
 
 // Components
 export { MediaLibraryProvider, useMediaLibraryContext } from './components/MediaLibraryProvider';

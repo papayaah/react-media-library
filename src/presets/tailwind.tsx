@@ -1,9 +1,10 @@
+import type { CSSProperties } from 'react';
 import { Portal } from '../components/Portal';
-import { ComponentPreset, CardProps, ButtonProps, TextInputProps, SelectProps, CheckboxProps, BadgeProps, ImageProps, ModalProps, LoaderProps, EmptyStateProps, FileButtonProps, GridProps, ViewerProps, ViewerThumbnailProps, PexelsImagePickerProps, FreepikContentPickerProps } from '../types';
+import { ComponentPreset, CardProps, ButtonProps, TextInputProps, SelectProps, CheckboxProps, BadgeProps, ImageProps, ModalProps, LoaderProps, EmptyStateProps, FileButtonProps, GridProps, ViewerProps, ViewerThumbnailProps, PexelsImagePickerProps, FreepikContentPickerProps, TextProps } from '../types';
 
 /**
  * Tailwind CSS Component Preset
- * A minimal, unstyled preset using Tailwind CSS classes
+ * A structural Tailwind preset whose colors come from semantic theme variables.
  */
 export const tailwindPreset: ComponentPreset = {
     Card: ({ children, onClick, selected, className = '', style }: CardProps) => (
@@ -12,21 +13,26 @@ export const tailwindPreset: ComponentPreset = {
             className={`
         border rounded-lg p-4 transition-all
         ${onClick ? 'cursor-pointer hover:shadow-lg' : ''}
-        ${selected ? 'border-blue-500 border-2 shadow-md' : 'border-gray-200'}
+        ${selected ? 'border-2 shadow-md' : ''}
         ${className}
-      `}
-            style={style}
+            `}
+            style={{
+                background: 'var(--rml-surface)',
+                color: 'var(--rml-foreground)',
+                borderColor: selected ? 'var(--rml-accent)' : 'var(--rml-border)',
+                ...style,
+            }}
         >
             {children}
         </div>
     ),
 
-    Button: ({ children, onClick, variant = 'primary', disabled, loading, size = 'md', fullWidth, leftIcon, className = '', 'aria-label': ariaLabel }: ButtonProps) => {
+    Button: ({ children, onClick, variant = 'primary', disabled, loading, size = 'md', fullWidth, leftIcon, className = '', style, 'aria-label': ariaLabel }: ButtonProps) => {
         const variants = {
-            primary: 'bg-blue-600 text-white hover:bg-blue-700',
-            secondary: 'bg-gray-200 text-gray-800 hover:bg-gray-300',
-            danger: 'bg-red-600 text-white hover:bg-red-700',
-            outline: 'border border-gray-300 text-gray-700 hover:bg-gray-50',
+            primary: '',
+            secondary: '',
+            danger: '',
+            outline: 'border',
         };
 
         const sizes = {
@@ -34,12 +40,19 @@ export const tailwindPreset: ComponentPreset = {
             md: 'px-4 py-2',
             lg: 'px-6 py-3 text-lg',
         };
+        const themeStyles = {
+            primary: { background: 'var(--rml-accent)', color: '#fff' },
+            secondary: { background: 'var(--rml-surface-muted)', color: 'var(--rml-foreground)' },
+            danger: { background: 'var(--rml-danger)', color: '#fff' },
+            outline: { background: 'transparent', color: 'var(--rml-foreground)', borderColor: 'var(--rml-border)' },
+        };
 
         return (
             <button
                 onClick={onClick}
                 disabled={disabled || loading}
                 aria-label={ariaLabel}
+                style={{ ...themeStyles[variant], ...style }}
                 className={`
           rounded-md font-medium transition-colors
           ${variants[variant]}
@@ -56,10 +69,13 @@ export const tailwindPreset: ComponentPreset = {
         );
     },
 
-    TextInput: ({ value, onChange, placeholder, type = 'text', leftIcon, className = '' }: TextInputProps) => (
+    TextInput: ({ value, onChange, placeholder, type = 'text', leftIcon, className = '', style }: TextInputProps) => (
         <div className="relative">
             {leftIcon && (
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                <div
+                    className="absolute left-3 top-1/2 -translate-y-1/2"
+                    style={{ color: 'var(--rml-muted)' }}
+                >
                     {leftIcon}
                 </div>
             )}
@@ -68,9 +84,15 @@ export const tailwindPreset: ComponentPreset = {
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
                 placeholder={placeholder}
+                style={{
+                    background: 'var(--rml-surface)',
+                    color: 'var(--rml-foreground)',
+                    borderColor: 'var(--rml-border)',
+                    ...style,
+                }}
                 className={`
-          w-full px-3 py-2 border border-gray-300 rounded-md
-          focus:outline-none focus:ring-2 focus:ring-blue-500
+          w-full px-3 py-2 border rounded-md
+          focus:outline-none focus:ring-2
           ${leftIcon ? 'pl-10' : ''}
           ${className}
         `}
@@ -78,12 +100,16 @@ export const tailwindPreset: ComponentPreset = {
         </div>
     ),
 
-    Select: ({ value, onChange, options, placeholder, label, 'aria-label': ariaLabel, className = '' }: SelectProps) => {
+    Select: ({ value, onChange, options, placeholder, label, 'aria-label': ariaLabel, className = '', style }: SelectProps) => {
         const selectId = `select-${Math.random().toString(36).substr(2, 9)}`;
         return (
             <div className="w-full">
                 {label && (
-                    <label htmlFor={selectId} className="block text-sm font-medium text-gray-700 mb-1">
+                    <label
+                        htmlFor={selectId}
+                        className="block text-sm font-medium mb-1"
+                        style={{ color: 'var(--rml-foreground)' }}
+                    >
                         {label}
                     </label>
                 )}
@@ -92,9 +118,15 @@ export const tailwindPreset: ComponentPreset = {
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
                     aria-label={!label ? (ariaLabel || placeholder) : undefined}
+                    style={{
+                        background: 'var(--rml-surface)',
+                        color: 'var(--rml-foreground)',
+                        borderColor: 'var(--rml-border)',
+                        ...style,
+                    }}
                     className={`
-            w-full px-3 py-2 border border-gray-300 rounded-md
-            focus:outline-none focus:ring-2 focus:ring-blue-500
+            w-full px-3 py-2 border rounded-md
+            focus:outline-none focus:ring-2
             ${className}
           `}
                 >
@@ -109,27 +141,40 @@ export const tailwindPreset: ComponentPreset = {
         );
     },
 
-    Checkbox: ({ checked, onChange, label, className = '' }: CheckboxProps) => (
-        <label className={`flex items-center gap-2 cursor-pointer ${className}`}>
+    Checkbox: ({ checked, onChange, label, className = '', style }: CheckboxProps) => (
+        <label className={`flex items-center gap-2 cursor-pointer ${className}`} style={{ color: 'var(--rml-foreground)', ...style }}>
             <input
                 type="checkbox"
                 checked={checked}
                 onChange={(e) => onChange(e.target.checked)}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                className="w-4 h-4 rounded"
+                style={{ accentColor: 'var(--rml-accent)' }}
             />
             {label && <span className="text-sm">{label}</span>}
         </label>
     ),
 
-    Badge: ({ children, variant = 'default', className = '' }: BadgeProps) => {
+    Badge: ({ children, variant = 'default', className = '', style }: BadgeProps) => {
         const variants = {
-            default: 'bg-gray-100 text-gray-800',
-            primary: 'bg-blue-100 text-blue-800',
-            secondary: 'bg-purple-100 text-purple-800',
+            default: {
+                background: 'var(--rml-surface-muted)',
+                color: 'var(--rml-foreground)',
+            },
+            primary: {
+                background: 'var(--rml-accent-soft)',
+                color: 'var(--rml-accent)',
+            },
+            secondary: {
+                background: 'var(--rml-surface-muted)',
+                color: 'var(--rml-muted)',
+            },
         };
 
         return (
-            <span className={`px-2 py-1 text-xs rounded-full ${variants[variant]} ${className}`}>
+            <span
+                className={`px-2 py-1 text-xs rounded-full ${className}`}
+                style={{ ...variants[variant], ...style }}
+            >
                 {children}
             </span>
         );
@@ -162,14 +207,15 @@ export const tailwindPreset: ComponentPreset = {
                         style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
                     />
                     <div
-                        className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-auto"
-                        style={{ position: 'relative', maxWidth: '42rem', width: '100%', maxHeight: '90vh', overflow: 'auto', borderRadius: '0.5rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}
+                        className="relative rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-auto"
+                        style={{ position: 'relative', maxWidth: '42rem', width: '100%', maxHeight: '90vh', overflow: 'auto', borderRadius: '0.5rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', background: 'var(--rml-surface)', color: 'var(--rml-foreground)' }}
                     >
-                        <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{title}</h3>
+                        <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: 'var(--rml-border)' }}>
+                            <h3 className="text-lg font-semibold">{title}</h3>
                             <button
                                 onClick={onClose}
-                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-2xl leading-none"
+                                className="text-2xl leading-none"
+                                style={{ color: 'var(--rml-muted)' }}
                             >
                                 ×
                             </button>
@@ -192,18 +238,19 @@ export const tailwindPreset: ComponentPreset = {
             <div
                 className={`
           ${sizes[size]}
-          border-blue-600 border-t-transparent
+          border-t-transparent
           rounded-full animate-spin
           ${className}
         `}
+                style={{ borderColor: 'var(--rml-accent)', borderTopColor: 'transparent' }}
             />
         );
     },
 
     EmptyState: ({ icon, message, className = '' }: EmptyStateProps) => (
-        <div className={`text-center py-12 ${className}`}>
-            {icon && <div className="mb-4 text-gray-400">{icon}</div>}
-            <p className="text-gray-500">{message}</p>
+        <div className={`text-center py-12 ${className}`} style={{ color: 'var(--rml-muted)' }}>
+            {icon && <div className="mb-4">{icon}</div>}
+            <p>{message}</p>
         </div>
     ),
 
@@ -237,7 +284,7 @@ export const tailwindPreset: ComponentPreset = {
     ),
 
     Skeleton: ({ className = '' }: { className?: string }) => (
-        <div className={`animate-pulse bg-gray-200 rounded ${className}`} style={{ width: '100%', height: '100%' }}>
+        <div className={`animate-pulse rounded ${className}`} style={{ width: '100%', height: '100%', background: 'var(--rml-surface-muted)' }}>
             {/* Simple skeleton that fills its container */}
         </div>
     ),
@@ -248,9 +295,13 @@ export const tailwindPreset: ComponentPreset = {
             className={`
                 border-2 border-dashed rounded-lg p-4 flex flex-col items-center justify-center
                 cursor-pointer transition-all h-full min-h-[300px]
-                ${isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'}
                 ${className}
             `}
+            style={{
+                background: isDragging ? 'var(--rml-accent-soft)' : 'var(--rml-surface)',
+                borderColor: isDragging ? 'var(--rml-accent)' : 'var(--rml-border)',
+                color: 'var(--rml-foreground)',
+            }}
         >
             {children}
         </div>
@@ -261,11 +312,11 @@ export const tailwindPreset: ComponentPreset = {
         return (
             <Portal>
                 <div
-                    className="fixed inset-0 z-[9999] bg-white dark:bg-black flex"
+                    className="fixed inset-0 z-[9999] flex"
                     style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', backgroundColor: '#000000' }}
                 >
                     {/* Main Content Area */}
-                    <div className="flex-1 relative bg-gray-100 dark:bg-black overflow-hidden">
+                    <div className="flex-1 relative overflow-hidden" style={{ background: '#000' }}>
                         {main}
                         {/* Actions Overlay */}
                         <div className="absolute top-4 right-4 flex gap-2 items-center z-[10000]">
@@ -282,11 +333,11 @@ export const tailwindPreset: ComponentPreset = {
 
                     {/* Sidebar */}
                     <div
-                        className="w-64 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 flex flex-col overflow-hidden"
-                        style={{ width: '16rem', borderLeft: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column' }}
+                        className="w-64 border-l flex flex-col overflow-hidden"
+                        style={{ width: '16rem', borderLeft: '1px solid var(--rml-border)', display: 'flex', flexDirection: 'column', background: 'var(--rml-surface)', color: 'var(--rml-foreground)' }}
                     >
-                        <div className="p-4 border-b border-gray-200 dark:border-gray-800">
-                            <h3 className="text-gray-900 dark:text-white font-medium text-sm">Library</h3>
+                        <div className="p-4 border-b" style={{ borderColor: 'var(--rml-border)' }}>
+                            <h3 className="font-medium text-sm">Library</h3>
                         </div>
                         <div className="flex-1 overflow-y-auto p-2">
                             {sidebar}
@@ -301,9 +352,13 @@ export const tailwindPreset: ComponentPreset = {
         <div
             onClick={onClick}
             className={`
-                shrink-0 aspect-square rounded-md overflow-hidden cursor-pointer border-2 transition-all bg-gray-100 dark:bg-gray-800
-                ${selected ? 'border-blue-500 opacity-100' : 'border-transparent opacity-60 hover:opacity-100'}
+                shrink-0 aspect-square rounded-md overflow-hidden cursor-pointer border-2 transition-all
+                ${selected ? 'opacity-100' : 'border-transparent opacity-60 hover:opacity-100'}
             `}
+            style={{
+                background: 'var(--rml-surface-muted)',
+                borderColor: selected ? 'var(--rml-accent)' : 'transparent',
+            }}
         >
             <img
                 src={src}
@@ -329,22 +384,23 @@ export const tailwindPreset: ComponentPreset = {
     }: PexelsImagePickerProps) => {
         if (!isOpen) return null;
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-                    <div className="p-4 border-b flex items-center justify-between">
+            <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0, 0, 0, 0.5)' }}>
+                <div className="rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col" style={{ background: 'var(--rml-surface)', color: 'var(--rml-foreground)' }}>
+                    <div className="p-4 border-b flex items-center justify-between" style={{ borderColor: 'var(--rml-border)' }}>
                         <h2 className="text-lg font-semibold">Pexels Images</h2>
                         <button
                             onClick={onClose}
-                            className="text-gray-500 hover:text-gray-700 text-xl"
+                            className="text-xl"
+                            style={{ color: 'var(--rml-muted)' }}
                         >
                             ×
                         </button>
                     </div>
-                    <div className="p-4 border-b flex items-center justify-between text-sm text-gray-600">
+                    <div className="p-4 border-b flex items-center justify-between text-sm" style={{ borderColor: 'var(--rml-border)', color: 'var(--rml-muted)' }}>
                         <span>{images.length} images available • {selected.size} selected</span>
                         <button
                             onClick={selected.size === images.length ? onDeselectAll : onSelectAll}
-                            className="text-blue-600 hover:text-blue-700"
+                            style={{ color: 'var(--rml-accent)' }}
                         >
                             {selected.size === images.length ? 'Deselect All' : 'Select All'}
                         </button>
@@ -352,10 +408,10 @@ export const tailwindPreset: ComponentPreset = {
                     <div className="flex-1 overflow-y-auto p-4" style={{ maxHeight: 400 }}>
                         {loading ? (
                             <div className="flex items-center justify-center p-8">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: 'var(--rml-accent)' }}></div>
                             </div>
                         ) : images.length === 0 ? (
-                            <div className="text-center p-8 text-gray-500">No images found</div>
+                            <div className="text-center p-8" style={{ color: 'var(--rml-muted)' }}>No images found</div>
                         ) : (
                             <div className="grid grid-cols-3 gap-4">
                                 {images.map((img) => (
@@ -364,8 +420,8 @@ export const tailwindPreset: ComponentPreset = {
                                         onClick={() => onToggleSelect(img.url)}
                                         className={`
                                             relative aspect-square rounded-lg overflow-hidden cursor-pointer border-2 transition-all
-                                            ${selected.has(img.url) ? 'border-blue-500' : 'border-gray-200'}
                                         `}
+                                        style={{ borderColor: selected.has(img.url) ? 'var(--rml-accent)' : 'var(--rml-border)' }}
                                     >
                                         <img
                                             src={img.url}
@@ -386,10 +442,11 @@ export const tailwindPreset: ComponentPreset = {
                             </div>
                         )}
                     </div>
-                    <div className="p-4 border-t flex justify-end gap-2">
+                    <div className="p-4 border-t flex justify-end gap-2" style={{ borderColor: 'var(--rml-border)' }}>
                         <button
                             onClick={onClose}
-                            className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
+                            className="px-4 py-2 rounded"
+                            style={{ color: 'var(--rml-foreground)' }}
                         >
                             Cancel
                         </button>
@@ -398,11 +455,9 @@ export const tailwindPreset: ComponentPreset = {
                             disabled={selected.size === 0 || importing}
                             className={`
                                 px-4 py-2 rounded font-medium
-                                ${selected.size === 0 || importing
-                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                                }
+                                ${selected.size === 0 || importing ? 'cursor-not-allowed opacity-50' : ''}
                             `}
+                            style={{ background: 'var(--rml-accent)', color: '#fff' }}
                         >
                             {importing ? 'Importing...' : `Import ${selected.size > 0 ? `(${selected.size})` : ''}`}
                         </button>
@@ -431,20 +486,21 @@ export const tailwindPreset: ComponentPreset = {
     }: FreepikContentPickerProps) => {
         if (!isOpen) return null;
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-                    <div className="p-4 border-b flex items-center justify-between">
+            <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0, 0, 0, 0.5)' }}>
+                <div className="rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col" style={{ background: 'var(--rml-surface)', color: 'var(--rml-foreground)' }}>
+                    <div className="p-4 border-b flex items-center justify-between" style={{ borderColor: 'var(--rml-border)' }}>
                         <h2 className="text-lg font-semibold">Freepik Icons</h2>
                         <button
                             onClick={onClose}
-                            className="text-gray-500 hover:text-gray-700 text-xl"
+                            className="text-xl"
+                            style={{ color: 'var(--rml-muted)' }}
                         >
                             ×
                         </button>
                     </div>
 
                     {/* Search & Filters */}
-                    <div className="p-4 border-b">
+                    <div className="p-4 border-b" style={{ borderColor: 'var(--rml-border)' }}>
                         <div className="flex gap-2 mb-3">
                             <input
                                 type="text"
@@ -454,12 +510,14 @@ export const tailwindPreset: ComponentPreset = {
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter') onSearch();
                                 }}
-                                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2"
+                                style={{ background: 'var(--rml-surface)', borderColor: 'var(--rml-border)', color: 'var(--rml-foreground)' }}
                             />
                             <select
                                 value={order}
                                 onChange={(e) => onOrderChange(e.target.value as 'relevance' | 'popularity' | 'date')}
-                                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="px-3 py-2 border rounded-md focus:outline-none focus:ring-2"
+                                style={{ background: 'var(--rml-surface)', borderColor: 'var(--rml-border)', color: 'var(--rml-foreground)' }}
                             >
                                 <option value="relevance">Relevance</option>
                                 <option value="popularity">Popular</option>
@@ -468,17 +526,19 @@ export const tailwindPreset: ComponentPreset = {
                             <button
                                 onClick={onSearch}
                                 disabled={loading}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                                className="px-4 py-2 rounded-md disabled:opacity-50"
+                                style={{ background: 'var(--rml-accent)', color: '#fff' }}
                             >
                                 Search
                             </button>
                         </div>
-                        <div className="flex items-center justify-between text-sm text-gray-600">
+                        <div className="flex items-center justify-between text-sm" style={{ color: 'var(--rml-muted)' }}>
                             <span>{content.length} icons found • {selected.size} selected</span>
                             <button
                                 onClick={selected.size === content.length && content.length > 0 ? onDeselectAll : onSelectAll}
                                 disabled={content.length === 0}
-                                className="text-blue-600 hover:text-blue-700 disabled:opacity-50"
+                                className="disabled:opacity-50"
+                                style={{ color: 'var(--rml-accent)' }}
                             >
                                 {selected.size === content.length && content.length > 0 ? 'Deselect All' : 'Select All'}
                             </button>
@@ -489,10 +549,10 @@ export const tailwindPreset: ComponentPreset = {
                     <div className="flex-1 overflow-y-auto p-4" style={{ maxHeight: 400 }}>
                         {loading ? (
                             <div className="flex items-center justify-center p-8">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: 'var(--rml-accent)' }}></div>
                             </div>
                         ) : content.length === 0 ? (
-                            <div className="text-center p-8 text-gray-500">No icons found. Try a different search term.</div>
+                            <div className="text-center p-8" style={{ color: 'var(--rml-muted)' }}>No icons found. Try a different search term.</div>
                         ) : (
                             <div className="grid grid-cols-4 gap-3">
                                 {content.map((item) => (
@@ -500,9 +560,12 @@ export const tailwindPreset: ComponentPreset = {
                                         key={item.id}
                                         onClick={() => onToggleSelect(item.id)}
                                         className={`
-                                            relative aspect-square rounded-lg overflow-hidden cursor-pointer border-2 transition-all bg-gray-50 flex items-center justify-center p-2
-                                            ${selected.has(item.id) ? 'border-blue-500' : 'border-gray-200'}
+                                            relative aspect-square rounded-lg overflow-hidden cursor-pointer border-2 transition-all flex items-center justify-center p-2
                                         `}
+                                        style={{
+                                            background: 'var(--rml-surface-muted)',
+                                            borderColor: selected.has(item.id) ? 'var(--rml-accent)' : 'var(--rml-border)',
+                                        }}
                                     >
                                         <img
                                             src={item.thumbnailUrl}
@@ -530,10 +593,11 @@ export const tailwindPreset: ComponentPreset = {
                     </div>
 
                     {/* Footer */}
-                    <div className="p-4 border-t flex justify-end gap-2">
+                    <div className="p-4 border-t flex justify-end gap-2" style={{ borderColor: 'var(--rml-border)' }}>
                         <button
                             onClick={onClose}
-                            className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
+                            className="px-4 py-2 rounded"
+                            style={{ color: 'var(--rml-foreground)' }}
                         >
                             Cancel
                         </button>
@@ -542,11 +606,9 @@ export const tailwindPreset: ComponentPreset = {
                             disabled={selected.size === 0 || importing}
                             className={`
                                 px-4 py-2 rounded font-medium
-                                ${selected.size === 0 || importing
-                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                                }
+                                ${selected.size === 0 || importing ? 'cursor-not-allowed opacity-50' : ''}
                             `}
+                            style={{ background: 'var(--rml-accent)', color: '#fff' }}
                         >
                             {importing ? 'Importing...' : `Import ${selected.size > 0 ? `(${selected.size})` : ''}`}
                         </button>
@@ -556,7 +618,7 @@ export const tailwindPreset: ComponentPreset = {
         );
     },
 
-    Text: ({ children, size = 'md', fw, c, mb, className = '', style }: any) => {
+    Text: ({ children, size = 'md', fw, c, mb, className = '', style }: TextProps) => {
         const sizeMap = {
             xs: 'text-xs',
             sm: 'text-sm',
@@ -569,8 +631,8 @@ export const tailwindPreset: ComponentPreset = {
             <div
                 className={`${sizeMap[size as keyof typeof sizeMap] || sizeMap.md} ${className}`}
                 style={{
-                    fontWeight: fw as any,
-                    color: c,
+                    fontWeight: fw as CSSProperties['fontWeight'],
+                    color: c || 'var(--rml-foreground)',
                     marginBottom: typeof mb === 'number' ? `${mb}px` : mb,
                     ...style
                 }}
