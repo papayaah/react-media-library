@@ -145,7 +145,7 @@ export const GridAssetItem: React.FC<GridAssetItemProps> = ({
                                 borderRadius: '50%',
                                 background: 'color-mix(in srgb, var(--rml-surface) 90%, transparent)',
                                 display: 'flex',
-                                itemsAlign: 'center',
+                                alignItems: 'center',
                                 justifyContent: 'center',
                                 boxShadow: '0 2px 4px 0 rgba(0, 0, 0, 0.1)',
                                 cursor: 'pointer',
@@ -156,7 +156,12 @@ export const GridAssetItem: React.FC<GridAssetItemProps> = ({
                             }}
                             title="View"
                         >
-                            {renderIcon(icons?.zoomIn, 14, { color: 'var(--rml-foreground)' }, 'View')}
+                            {icons?.zoomIn ? renderIcon(icons.zoomIn, 14, { color: 'var(--rml-foreground)' }) : (
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--rml-foreground)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                </svg>
+                            )}
                         </div>
 
                         {/* More/Dots Button (Context Menu) */}
