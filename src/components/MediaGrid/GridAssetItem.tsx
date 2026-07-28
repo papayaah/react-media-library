@@ -73,6 +73,15 @@ export const GridAssetItem: React.FC<GridAssetItemProps> = ({
         return () => observer.disconnect();
     }, [asset.id]);
 
+    const fileExt = (asset.fileName?.split('.').pop() || '').toLowerCase();
+    const isVideo = asset.fileType === 'video' || (asset.mimeType?.startsWith('video/')) || Boolean(asset.fileName?.toLowerCase().match(/\.(mp4|webm|mov|ogg|mkv|avi)$/));
+    const isImage = asset.fileType === 'image' || (asset.mimeType?.startsWith('image/')) || Boolean(asset.fileName?.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp|svg|avif|heic|heif)$/));
+    const isVisualMedia = (isImage || isVideo) && Boolean(resolvedUrl);
+
+    const isCsvOrSpreadsheet = ['csv', 'tsv', 'xls', 'xlsx'].includes(fileExt);
+    const isCodeOrData = ['json', 'xml', 'tlg', 'log'].includes(fileExt);
+    const isDocument = ['pdf', 'doc', 'docx', 'txt', 'rtf', 'odt'].includes(fileExt);
+
     return (
         <div ref={containerRef} style={{ height: '100%' }}>
             <Card
@@ -136,7 +145,7 @@ export const GridAssetItem: React.FC<GridAssetItemProps> = ({
                                 borderRadius: '50%',
                                 background: 'color-mix(in srgb, var(--rml-surface) 90%, transparent)',
                                 display: 'flex',
-                                alignItems: 'center',
+                                itemsAlign: 'center',
                                 justifyContent: 'center',
                                 boxShadow: '0 2px 4px 0 rgba(0, 0, 0, 0.1)',
                                 cursor: 'pointer',
@@ -226,24 +235,24 @@ export const GridAssetItem: React.FC<GridAssetItemProps> = ({
                         width: '100%',
                         height: variant === 'minimal' ? 'auto' : (viewMode === 'grid' ? '120px' : '160px'),
                         minHeight: viewMode === 'masonry' ? 80 : (variant === 'minimal' ? undefined : (viewMode === 'grid' ? '120px' : '160px')),
-                        // Force square in grid mode, otherwise use original aspect ratio for masonry (capped at 3:4 portrait)
                         aspectRatio: viewMode === 'grid' ? '1 / 1' : (variant === 'minimal' && asset.width && asset.height
                             ? `${asset.width} / ${Math.min(asset.height, asset.width * (4 / 3))}`
-                            : '4 / 5'), // Default to 4:5 if no metadata yet
+                            : '4 / 5'),
                         overflow: 'hidden',
                         borderBottom: variant === 'minimal' ? 'none' : '1px solid var(--rml-border)',
                         position: 'relative',
-                        // Always use a light background with subtle checkerboard to show transparency
                         backgroundColor: 'var(--rml-surface)',
-                        backgroundImage: 'linear-gradient(45deg, var(--rml-surface-muted) 25%, transparent 25%), linear-gradient(-45deg, var(--rml-surface-muted) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, var(--rml-surface-muted) 75%), linear-gradient(-45deg, transparent 75%, var(--rml-surface-muted) 75%)',
+                        backgroundImage: isVisualMedia
+                            ? 'linear-gradient(45deg, var(--rml-surface-muted) 25%, transparent 25%), linear-gradient(-45deg, var(--rml-surface-muted) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, var(--rml-surface-muted) 75%), linear-gradient(-45deg, transparent 75%, var(--rml-surface-muted) 75%)'
+                            : undefined,
                         backgroundSize: '16px 16px',
                         backgroundPosition: '0 0, 0 8px, 8px -8px, -8px 0px',
-                        flexShrink: 0, // Prevent height collapse
+                        flexShrink: 0,
                     }}
                     onMouseEnter={() => setIsHovered(true)}
                     onMouseLeave={() => setIsHovered(false)}
                 >
-                    {resolvedUrl ? (
+                    {isVisualMedia ? (
                         <>
                             {!isImageLoaded && (
                                 <div style={{
@@ -256,7 +265,7 @@ export const GridAssetItem: React.FC<GridAssetItemProps> = ({
                                     <Skeleton className="w-full h-full" />
                                 </div>
                             )}
-                            {/* Local-only indicator (Cloud quota exceeded) */}
+                            {/* Local-only indicator */}
                             {asset.syncStatus === 'local-only' && (
                                 <div
                                     title="Local Only - Cloud Storage Full"
@@ -282,14 +291,14 @@ export const GridAssetItem: React.FC<GridAssetItemProps> = ({
                                     LOCAL ONLY
                                 </div>
                             )}
-                            {asset.fileType === 'video' || (asset.fileType === 'other' && asset.fileName?.toLowerCase().match(/\.(mp4|webm|mov|ogg)$/)) ? (
+                            {isVideo ? (
                                 <video
                                     src={resolvedUrl}
                                     style={{
                                         width: '100%',
                                         height: '100%',
                                         objectFit: 'cover',
-                                        display: 'block' // Remove inline spacing
+                                        display: 'block'
                                     }}
                                     className="media-item-content"
                                     onLoadedMetadata={() => setIsImageLoaded(true)}
@@ -312,7 +321,7 @@ export const GridAssetItem: React.FC<GridAssetItemProps> = ({
                                         width: '100%',
                                         height: '100%',
                                         objectFit: 'cover',
-                                        display: 'block', // Remove inline spacing
+                                        display: 'block',
                                         transition: 'transform 0.3s ease',
                                         transform: isHovered ? 'scale(1.05)' : 'scale(1)',
                                     }}
@@ -330,31 +339,53 @@ export const GridAssetItem: React.FC<GridAssetItemProps> = ({
                             justifyContent: 'center',
                             backgroundColor: 'var(--rml-surface-muted)',
                             color: 'var(--rml-muted)',
-                            gap: '0.375rem',
+                            gap: '0.5rem',
                             position: 'relative',
-                            padding: '0.5rem',
+                            padding: '0.75rem',
                         }}>
-                            {/* Visual file icon fallback */}
-                            {renderTypeIcon(iconMap[asset.fileType], 28) || (
-                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.6 }}>
+                            {/* Distinct visual SVG icon based on file type */}
+                            {isCsvOrSpreadsheet ? (
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--rml-accent)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.9 }}>
+                                    <rect x="3" y="3" width="18" height="18" rx="2.5"/>
+                                    <line x1="3" y1="9" x2="21" y2="9"/>
+                                    <line x1="3" y1="15" x2="21" y2="15"/>
+                                    <line x1="9" y1="3" x2="9" y2="21"/>
+                                    <line x1="15" y1="3" x2="15" y2="21"/>
+                                </svg>
+                            ) : isCodeOrData ? (
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--rml-accent)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.9 }}>
+                                    <polyline points="16 18 22 12 16 6"/>
+                                    <polyline points="8 6 2 12 8 18"/>
+                                </svg>
+                            ) : isDocument ? (
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--rml-accent)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.9 }}>
                                     <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
                                     <polyline points="14 2 14 8 20 8"/>
+                                    <line x1="16" y1="13" x2="8" y2="13"/>
+                                    <line x1="16" y1="17" x2="8" y2="17"/>
                                 </svg>
+                            ) : (
+                                renderTypeIcon(iconMap[asset.fileType], 28) || (
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.6 }}>
+                                        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                                        <polyline points="14 2 14 8 20 8"/>
+                                    </svg>
+                                )
                             )}
-                            {/* Extension pill */}
+
+                            {/* Format Extension Pill */}
                             <span style={{
-                                fontSize: '9px',
+                                fontSize: '10px',
                                 fontWeight: 800,
                                 textTransform: 'uppercase',
-                                letterSpacing: '0.05em',
-                                background: 'color-mix(in srgb, var(--rml-surface) 80%, transparent)',
+                                letterSpacing: '0.08em',
+                                background: 'color-mix(in srgb, var(--rml-surface) 85%, transparent)',
                                 border: '1px solid var(--rml-border)',
                                 color: 'var(--rml-foreground)',
-                                padding: '1px 5px',
+                                padding: '2px 7px',
                                 borderRadius: '4px',
-                                opacity: 0.8,
                             }}>
-                                {asset.fileName?.split('.').pop() || asset.fileType || 'FILE'}
+                                {fileExt || asset.fileType || 'DATA'}
                             </span>
                         </div>
                     )}
