@@ -221,27 +221,51 @@ export const MediaGridToolbar: React.FC<MediaGridToolbarProps> = ({
                             size="sm"
                             onClick={() => setViewMode('grid')}
                             aria-label="Grid view"
-                            style={{ padding: '0 0.5rem', minWidth: '36px' }}
+                            style={{ padding: '0 0.5rem', minWidth: '36px', height: '32px', display: 'flex', alignItems: 'center', justifyCenter: 'center' }}
+                            title="Grid View"
                         >
-                            {renderIcon(icons?.layoutGrid, 18, undefined, 'Grid')}
+                            {icons?.layoutGrid ? renderIcon(icons.layoutGrid, 18) : (
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="3" y="3" width="7" height="7" rx="1"/>
+                                    <rect x="14" y="3" width="7" height="7" rx="1"/>
+                                    <rect x="14" y="14" width="7" height="7" rx="1"/>
+                                    <rect x="3" y="14" width="7" height="7" rx="1"/>
+                                </svg>
+                            )}
                         </Button>
                         <Button
                             variant={viewMode === 'list' ? 'primary' : 'secondary'}
                             size="sm"
                             onClick={() => setViewMode('list')}
                             aria-label="List view"
-                            style={{ padding: '0 0.5rem', minWidth: '36px' }}
+                            style={{ padding: '0 0.5rem', minWidth: '36px', height: '32px', display: 'flex', alignItems: 'center', justifyCenter: 'center' }}
+                            title="List View"
                         >
-                            {renderIcon(icons?.list, 18, undefined, 'List')}
+                            {icons?.list ? renderIcon(icons.list, 18) : (
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="8" y1="6" x2="21" y2="6"/>
+                                    <line x1="8" y1="12" x2="21" y2="12"/>
+                                    <line x1="8" y1="18" x2="21" y2="18"/>
+                                    <line x1="3" y1="6" x2="3.01" y2="6"/>
+                                    <line x1="3" y1="12" x2="3.01" y2="12"/>
+                                    <line x1="3" y1="18" x2="3.01" y2="18"/>
+                                </svg>
+                            )}
                         </Button>
                         <Button
                             variant={viewMode === 'masonry' ? 'primary' : 'secondary'}
                             size="sm"
                             onClick={() => setViewMode('masonry')}
                             aria-label="Masonry view"
-                            style={{ padding: '0 0.5rem', minWidth: '36px' }}
+                            style={{ padding: '0 0.5rem', minWidth: '36px', height: '32px', display: 'flex', alignItems: 'center', justifyCenter: 'center' }}
+                            title="Masonry View"
                         >
-                            {renderIcon(icons?.columns, 18, undefined, 'Masonry')}
+                            {icons?.columns ? renderIcon(icons.columns, 18) : (
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M12 3v18"/>
+                                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                </svg>
+                            )}
                         </Button>
                     </div>
                 </div>

@@ -25,9 +25,7 @@ export const renderIcon = (
     if (typeof icon === 'function' || (typeof icon === 'object' && icon !== null)) {
         const IconComponent = icon as any;
         try {
-            // Check if it's a component type by seeing if it's NOT a React element instance
-            // React.isValidElement already handled that above.
-            return React.createElement(IconComponent, { size, stroke: 1.5, ...props });
+            return React.createElement(IconComponent, { size, strokeWidth: 1.75, color: 'currentColor', ...props });
         } catch (e) {
             return fallbackText ? <span>{fallbackText}</span> : null;
         }
