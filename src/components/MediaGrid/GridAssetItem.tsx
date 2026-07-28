@@ -325,13 +325,37 @@ export const GridAssetItem: React.FC<GridAssetItemProps> = ({
                             width: '100%',
                             height: '100%',
                             display: 'flex',
+                            flexDirection: 'column',
                             alignItems: 'center',
                             justifyContent: 'center',
                             backgroundColor: 'var(--rml-surface-muted)',
-                            color: 'var(--rml-border)',
+                            color: 'var(--rml-muted)',
+                            gap: '0.375rem',
+                            position: 'relative',
+                            padding: '0.5rem',
                         }}>
-                            {/* Icon fallback while not visible or no preview */}
-                            {renderTypeIcon(iconMap[asset.fileType], 32)}
+                            {/* Visual file icon fallback */}
+                            {renderTypeIcon(iconMap[asset.fileType], 28) || (
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.6 }}>
+                                    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                                    <polyline points="14 2 14 8 20 8"/>
+                                </svg>
+                            )}
+                            {/* Extension pill */}
+                            <span style={{
+                                fontSize: '9px',
+                                fontWeight: 800,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em',
+                                background: 'color-mix(in srgb, var(--rml-surface) 80%, transparent)',
+                                border: '1px solid var(--rml-border)',
+                                color: 'var(--rml-foreground)',
+                                padding: '1px 5px',
+                                borderRadius: '4px',
+                                opacity: 0.8,
+                            }}>
+                                {asset.fileName?.split('.').pop() || asset.fileType || 'FILE'}
+                            </span>
                         </div>
                     )}
                 </div>

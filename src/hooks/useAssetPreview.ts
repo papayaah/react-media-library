@@ -19,34 +19,53 @@ export function useAssetPreview(asset: MediaAsset | null | undefined, enabled: b
             return;
         }
 
-        const handle = preferFull ? (asset.handleName || asset.thumbnailHandleName) : (asset.thumbnailHandleName || asset.handleName);
-        const cloudUrl = preferFull ? (asset.fullUrl || asset.previewUrl) : asset.previewUrl;
+        const primaryHandle = preferFull 
+            ? (asset.handleName || asset.thumbnailHandleName) 
+            : (asset.thumbnailHandleName || asset.handleName);
+        const secondaryHandle = preferFull 
+            ? asset.thumbnailHandleName 
+            : asset.handleName;
+        const cloudUrl = preferFull 
+            ? (asset.fullUrl || asset.previewUrl || (asset as any).url) 
+            : (asset.previewUrl || asset.fullUrl || (asset as any).url);
 
-        // 1. Determine the best immediate URL (Cache > Cloud > undefined)
-        const cachedUrl = handle ? blobCache.get(handle) : undefined;
-        const targetUrl = cachedUrl || cloudUrl;
+        // 1. Determine immediate cached or cloud URL
+        const cachedPrimary = primaryHandle ? blobCache.get(primaryHandle) : undefined;
+        const cachedSecondary = secondaryHandle ? blobCache.get(secondaryHandle) : undefined;
+        const targetUrl = cachedPrimary || cachedSecondary || cloudUrl;
 
-        // Update state if it doesn't match the target for the current asset
-        if (url !== targetUrl) {
+        if (targetUrl) {
             setUrl(targetUrl);
+            return;
         }
 
-        // 2. Trigger load from OPFS if handle exists and isn't cached/loading
-        if (handle && !blobCache.has(handle) && loadingRef.current !== handle) {
-            loadingRef.current = handle;
-            getFileFromOpfs(handle).then(file => {
+        // 2. Load from OPFS with handle fallback (primary -> secondary)
+        const handleToLoad = primaryHandle || secondaryHandle;
+        if (handleToLoad && loadingRef.current !== handleToLoad) {
+            loadingRef.current = handleToLoad;
+            getFileFromOpfs(handleToLoad).then(file => {
                 if (file) {
                     const objectUrl = URL.createObjectURL(file);
-                    blobCache.set(handle, objectUrl);
-                    // Only update if we haven't switched to a different handle/asset
-                    if (loadingRef.current === handle) {
+                    blobCache.set(handleToLoad, objectUrl);
+                    if (loadingRef.current === handleToLoad) {
                         setUrl(objectUrl);
                     }
+                } else if (secondaryHandle && secondaryHandle !== handleToLoad) {
+                    // Fallback to secondary handle if primary handle returned null
+                    return getFileFromOpfs(secondaryHandle).then(fallbackFile => {
+                        if (fallbackFile) {
+                            const objectUrl = URL.createObjectURL(fallbackFile);
+                            blobCache.set(secondaryHandle, objectUrl);
+                            if (loadingRef.current === handleToLoad) {
+                                setUrl(objectUrl);
+                            }
+                        }
+                    });
                 }
             }).catch(err => {
                 console.error('[useAssetPreview] Failed to load local asset:', err);
             }).finally(() => {
-                if (loadingRef.current === handle) {
+                if (loadingRef.current === handleToLoad) {
                     loadingRef.current = null;
                 }
             });
