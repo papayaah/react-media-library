@@ -425,6 +425,7 @@ export interface ButtonProps {
     style?: React.CSSProperties;
     color?: string;
     'aria-label'?: string;
+    title?: string;
 }
 
 export interface TextInputProps {
@@ -444,6 +445,7 @@ export interface SelectProps {
     placeholder?: string;
     label?: string;
     'aria-label'?: string;
+    title?: string;
     className?: string;
     style?: React.CSSProperties;
 }

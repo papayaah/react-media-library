@@ -221,7 +221,7 @@ export const MediaGridToolbar: React.FC<MediaGridToolbarProps> = ({
                             size="sm"
                             onClick={() => setViewMode('grid')}
                             aria-label="Grid view"
-                            style={{ padding: '0 0.5rem', minWidth: '36px', height: '32px', display: 'flex', alignItems: 'center', justifyCenter: 'center' }}
+                            style={{ padding: '0 0.5rem', minWidth: '36px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                             title="Grid View"
                         >
                             {icons?.layoutGrid ? renderIcon(icons.layoutGrid, 18) : (
@@ -238,7 +238,7 @@ export const MediaGridToolbar: React.FC<MediaGridToolbarProps> = ({
                             size="sm"
                             onClick={() => setViewMode('list')}
                             aria-label="List view"
-                            style={{ padding: '0 0.5rem', minWidth: '36px', height: '32px', display: 'flex', alignItems: 'center', justifyCenter: 'center' }}
+                            style={{ padding: '0 0.5rem', minWidth: '36px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                             title="List View"
                         >
                             {icons?.list ? renderIcon(icons.list, 18) : (
@@ -257,7 +257,7 @@ export const MediaGridToolbar: React.FC<MediaGridToolbarProps> = ({
                             size="sm"
                             onClick={() => setViewMode('masonry')}
                             aria-label="Masonry view"
-                            style={{ padding: '0 0.5rem', minWidth: '36px', height: '32px', display: 'flex', alignItems: 'center', justifyCenter: 'center' }}
+                            style={{ padding: '0 0.5rem', minWidth: '36px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                             title="Masonry View"
                         >
                             {icons?.columns ? renderIcon(icons.columns, 18) : (
